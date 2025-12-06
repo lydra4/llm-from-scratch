@@ -1,8 +1,8 @@
 
 
 # Configuration and Logging
-hydra-core
-omegaconf
-python-dotenv
-python-json-logger
-rich
+hydra-core==1.3.2
+omegaconf==2.3.0
+python-dotenv==1.2.1
+python-json-logger==4.0.0
+rich==14.2.0

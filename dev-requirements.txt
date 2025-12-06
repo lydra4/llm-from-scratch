@@ -1,7 +1,7 @@
 # Code Formatting and Linting
-black
-ruff
-pylint
+black==25.11.0
+ruff==0.14.8
+pylint==4.0.4
 
 # Pre-commit Hooks
-pre-commit
+pre-commit==4.5.0
