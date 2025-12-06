@@ -15,6 +15,9 @@
 !**/models/**/
 !**/data/**/
 
+# Allow .gitkeep files so the directory structure can be committed
+!**/data/**/.gitkeep
+
 # Allow .txt files inside any data folder
 !**/data/**/*.txt
 
