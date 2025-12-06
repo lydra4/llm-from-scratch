@@ -1,0 +1,8 @@
+
+
+# Configuration and Logging
+hydra-core
+omegaconf
+python-dotenv
+python-json-logger
+rich

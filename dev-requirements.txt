@@ -1,0 +1,7 @@
+# Code Formatting and Linting
+black
+ruff
+pylint
+
+# Pre-commit Hooks
+pre-commit
