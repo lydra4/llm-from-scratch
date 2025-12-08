@@ -1,4 +1,5 @@
-
+# Content Parsing
+ebooklib==0.20
 
 # Configuration and Logging
 hydra-core==1.3.2
