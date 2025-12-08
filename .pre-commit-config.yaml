@@ -21,6 +21,8 @@ repos:
         args:
           - "--config-file=.github/workflows/mypy.ini"
           - "--namespace-packages"
+        additional_dependencies:
+          - types-PyYAML
 
   - repo: https://github.com/psf/black
     rev: 25.11.0
