@@ -5,3 +5,4 @@ pylint==4.0.4
 
 # Pre-commit Hooks
 pre-commit==4.5.0
+types-PyYAML==6.0.12.20250915
