@@ -1,0 +1,13 @@
+raw_epub_dir: "./data/01-raw/"
+processed_dir: "./data/02-preprocessed/"
+exclude_files: [
+    "titlepage.xhtml",
+    "toc.html",
+    "game-of-thrones-00.html",
+    "game-of-thrones-01.html",
+    "game-of-thrones-03.html",
+    "text/part0000.html",
+    "text/part0001.html",
+    "text/part0002.html",
+    "text/part0003.html",
+]
