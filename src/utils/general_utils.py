@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def setup_logging(
-    logging_config_path="../conf/logging.yaml", default_level=logging.INFO
+    logging_config_path="./config/logging.yaml", default_level=logging.INFO
 ) -> None:
     try:
         os.makedirs("logs", exist_ok=True)
