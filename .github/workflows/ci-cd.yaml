@@ -52,5 +52,5 @@ jobs:
         run: |
           docker build \
           -t prod-requirements:${{ github.sha }} \
-          -f docker/prod-requirements.Dockerfile \
+          -f docker/llmfromscratch.Dockerfile \
           .
