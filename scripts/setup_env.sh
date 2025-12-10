@@ -3,7 +3,7 @@ set -e
 eval "$(conda shell.bash hook)"
 
 echo "🚀 Creating environment from env.yaml ..."
-conda env create -f env.yaml -y
+mamba env create -f env.yaml -y
 echo "✅ Environment created."
 
 # Extract env name from env.yaml
@@ -18,6 +18,6 @@ pre-commit run --all-files || true
 echo "✅ Pre-commit setup completed."
 
 echo "🧹 Cleaning conda & pip caches..."
-conda clean -a -y
+mamba clean -a -y
 pip cache purge
 echo "✨ Cleanup done."
