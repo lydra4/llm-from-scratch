@@ -1,0 +1,56 @@
+name: llm-from-scratch
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  lint-and-typecheck:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/prod-requirements.txt', '**/dev-requirements.txt')}}
+          restore-keys: ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r prod-requirements.txt -r dev-requirements.txt
+
+      - name: Pre-commit Hooks
+        run: pre-commit run --all-files
+
+      - name: Run mypy
+        run: mypy --config-file .github/workflows/mypy.ini src
+
+  docker-build-test:
+    name: Docker Build & Test
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker Image
+        run: |
+          docker build \
+          -t prod-requirements:${{ github.sha }} \
+          -f docker/prod-requirements.Dockerfile \
+          .
