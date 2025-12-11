@@ -11,3 +11,6 @@ exclude_files: [
     "text/part0002.html",
     "text/part0003.html",
 ]
+train_ratio: 0.90
+val_ratio: 0.05
+test_ratio: 0.05
