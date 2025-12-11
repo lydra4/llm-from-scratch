@@ -1,5 +1,6 @@
 raw_epub_dir: "./data/01-raw/"
 processed_dir: "./data/02-preprocessed/"
+dataset_dir: "./data/03-datasets/"
 exclude_files: [
     "titlepage.xhtml",
     "toc.html",
