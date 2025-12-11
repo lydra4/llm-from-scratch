@@ -114,6 +114,28 @@ class DataPreprocessing:
         with open(file=processed_path, mode="w", encoding="utf-8") as f:
             f.write(text)
 
+    def _load_text_files(self, text_dictionary: Dict[str, List[str]]) -> Dict[str, str]:
+        return {
+            title: open(file=paths[0], mode="r", encoding="utf-8").read()
+            for title, paths in text_dictionary.items()
+        }
+
+    def _train_val_test_split(
+        self,
+        text_map: Dict[str, str],
+        train_ratio: float,
+        val_ratio: float,
+        test_ratio: float,
+    ):
+        total = train_ratio + val_ratio + test_ratio
+        if not abs(total - 1.0) < 1e-9:
+            raise ValueError(f"Train/val/test ratios must sum to 1. Got: '{total}'.")
+
+        self.logger.info(
+            f"Performing train/val/test split in the ratio: '{train_ratio}/{val_ratio}/{test_ratio}'."
+        )
+        print({key: value[:200] for key, value in text_map.items()})
+
     def perform_processing(self):
         epub_dict = self._list_files_by_extension(
             path=self.cfg.raw_epub_dir, extension=".epub"
@@ -130,4 +152,10 @@ class DataPreprocessing:
         txt_dict = self._list_files_by_extension(
             path=self.cfg.processed_dir, extension=".txt"
         )
-        print(txt_dict)
+        text_map = self._load_text_files(text_dictionary=txt_dict)
+        self._train_val_test_split(
+            text_map=text_map,
+            train_ratio=self.cfg.train_ratio,
+            val_ratio=self.cfg.val_ratio,
+            test_ratio=self.cfg.test_ratio,
+        )
