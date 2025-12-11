@@ -40,7 +40,11 @@ class DataPreprocessing:
         self.cfg = cfg
         self.logger = logger or logging.getLogger(__name__)
 
-    def _obtain_epub_list(self, path: str) -> Dict[str, List[str]]:
+    def _list_files_by_extension(
+        self,
+        path: str,
+        extension: str,
+    ) -> Dict[str, List[str]]:
         walks = [
             (os.path.basename(dirpath), dirpath, filenames)
             for dirpath, _, filenames in os.walk(path)
@@ -50,7 +54,7 @@ class DataPreprocessing:
             folder: [
                 os.path.join(dirpath, file)
                 for file in filenames
-                if file.endswith(".epub")
+                if file.endswith(extension)
             ]
             for folder, dirpath, filenames in walks
             if folder != ""
@@ -111,9 +115,11 @@ class DataPreprocessing:
             f.write(text)
 
     def perform_processing(self):
-        epub_dict = self._obtain_epub_list(path=self.cfg.raw_epub_dir)
+        epub_dict = self._list_files_by_extension(
+            path=self.cfg.raw_epub_dir, extension=".epub"
+        )
         for title, epub_list in epub_dict.items():
-            self.logger.info(f"Processing {title} books.")
+            self.logger.info(f"Cleaning '{title}' books.")
             raw_text = self._extract_epub_books(epub_list=epub_list)
             clean_text = self._clean_text(text=raw_text)
             self._save_file(
@@ -121,3 +127,7 @@ class DataPreprocessing:
                 title=title,
                 text=clean_text,
             )
+        txt_dict = self._list_files_by_extension(
+            path=self.cfg.processed_dir, extension=".txt"
+        )
+        print(txt_dict)
