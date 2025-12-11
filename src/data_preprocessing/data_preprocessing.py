@@ -17,6 +17,26 @@ class DataPreprocessing:
         cfg: DictConfig,
         logger: Optional[logging.Logger] = None,
     ) -> None:
+        self.trans_table = str.maketrans(
+            {
+                "“": '"',
+                "”": '"',
+                "‘": "'",
+                "’": "'",
+                "–": "-",
+                "—": "-",
+                "…": "...",
+                "\u00a0": " ",
+            }
+        )
+        self.legal_boilerplate_pattern = re.compile(
+            r"(?im)^.*("
+            r"copyright|©|all rights reserved|no part of this|permission of the publisher|"
+            r"isbn[\s:-]*\S+|digital edition|first published|published in print|published by|"
+            r"illustration|illustrations by|trademarks"
+            r").*?(\n|$)",
+            flags=re.MULTILINE | re.IGNORECASE,
+        )
         self.cfg = cfg
         self.logger = logger or logging.getLogger(__name__)
 
@@ -61,32 +81,26 @@ class DataPreprocessing:
         return "\n".join(texts)
 
     def _clean_text(self, text: str) -> str:
-        cleaned_text = unicodedata.normalize("NFKC", text)
-        cleaned_text = cleaned_text.replace("“", '"').replace("”", '"')
-        cleaned_text = cleaned_text.replace("‘", "'").replace("’", "'")
-        cleaned_text = cleaned_text.replace("–", "-").replace("—", "-")
-        cleaned_text = cleaned_text.replace("…", "...")
-        cleaned_text = cleaned_text.replace("\u00a0", " ")
+        cleaned_text = unicodedata.normalize("NFKC", text).translate(self.trans_table)
         cleaned_text = cleaned_text.replace("&nbsp;", " ").replace("&amp;", "&")
-
         cleaned_text = re.sub(r"\*{2,}", "<scene_break>", cleaned_text)
-        cleaned_text = re.sub(r"_{2,}", "", cleaned_text)
-        cleaned_text = re.sub(r"-{2,}", "", cleaned_text)
-        cleaned_text = re.sub(r"[ \t]+", " ", cleaned_text)
-        cleaned_text = re.sub(r"\n{1,}", "\n", cleaned_text)
+        cleaned_text = re.sub(r"[-_]{3,}", "", cleaned_text)
+        cleaned_text = self.legal_boilerplate_pattern.sub("", cleaned_text)
         cleaned_text = re.sub(
             r"^\s*(page|chapter)\s*([0-9]+|[A-Z]+|[A-Za-z\-]+)\s*$",
             "",
             cleaned_text,
             flags=re.IGNORECASE | re.MULTILINE,
         )
-        cleaned_text = re.sub(r"-\n\s*", "", cleaned_text)
-        cleaned_text = re.sub(r"([!?.])\1{2,}", r"\1\1\1", cleaned_text)
         cleaned_text = re.sub(
             r"\b(?:https?://|www\.)\S+|\b[a-zA-Z0-9.-]+\.(com|org|net|io|co|sg|gov)(/\S*)?",
             "",
             cleaned_text,
         )
+        cleaned_text = re.sub(r"-\n\s*", "", cleaned_text)
+        cleaned_text = re.sub(r"([!?.])\1{2,}", r"\1\1\1", cleaned_text)
+        cleaned_text = re.sub(r"[ \t]+", " ", cleaned_text)
+        cleaned_text = re.sub(r"\n{2,}", "\n", cleaned_text)
         return cleaned_text.strip()
 
     def _save_file(self, processed_path: str, title: str, text: str) -> None:
