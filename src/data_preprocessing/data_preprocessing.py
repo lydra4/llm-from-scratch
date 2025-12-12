@@ -2,7 +2,7 @@ import logging
 import os
 import re
 import unicodedata
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import ebooklib
 from bs4 import BeautifulSoup
@@ -126,7 +126,7 @@ class DataPreprocessing:
         train_ratio: float,
         val_ratio: float,
         test_ratio: float,
-    ):
+    ) -> Tuple[str, str, str]:
         total = train_ratio + val_ratio + test_ratio
         if not abs(total - 1.0) < 1e-9:
             raise ValueError(f"Train/val/test ratios must sum to 1. Got: '{total}'.")
@@ -134,7 +134,42 @@ class DataPreprocessing:
         self.logger.info(
             f"Performing train/val/test split in the ratio: '{train_ratio}/{val_ratio}/{test_ratio}'."
         )
-        print({key: value[:200] for key, value in text_map.items()})
+
+        train_text, val_text, test_text = [], [], []
+        for value in text_map.values():
+            words = value.split()
+            n_words = len(words)
+
+            train_end = int(n_words * train_ratio)
+            val_end = int(n_words * (train_ratio + val_ratio))
+
+            train_words = words[:train_end]
+            val_words = words[train_end:val_end]
+            test_words = words[val_end:]
+
+            train_text.extend(train_words)
+            val_text.extend(val_words)
+            test_text.extend(test_words)
+
+        self.logger.info("Train/val/test split completed.")
+        return (
+            " ".join(train_text),
+            " ".join(val_text),
+            " ".join(test_text),
+        )
+
+    def _save_text_files(self, path: str, **kwargs: str) -> None:
+        self.logger.info(
+            f"Saving '{','.join(key.split(sep='_')[0] for key in kwargs.keys())}' at {path}."
+        )
+        for key, value in kwargs.items():
+            cleaned_folder_name = key.split(sep="_")[0]
+            save_path = os.path.join(path, cleaned_folder_name)
+            os.makedirs(name=save_path, exist_ok=True)
+            text_path = os.path.join(save_path, key + ".txt")
+            with open(file=text_path, mode="w", encoding="utf-8") as f:
+                f.write(value)
+            self.logger.info(f"Successfully saved '{cleaned_folder_name}'.")
 
     def perform_processing(self):
         epub_dict = self._list_files_by_extension(
@@ -150,12 +185,19 @@ class DataPreprocessing:
                 text=clean_text,
             )
         txt_dict = self._list_files_by_extension(
-            path=self.cfg.processed_dir, extension=".txt"
+            path=self.cfg.processed_dir,
+            extension=".txt",
         )
         text_map = self._load_text_files(text_dictionary=txt_dict)
-        self._train_val_test_split(
+        train_text, val_text, test_text = self._train_val_test_split(
             text_map=text_map,
             train_ratio=self.cfg.train_ratio,
             val_ratio=self.cfg.val_ratio,
             test_ratio=self.cfg.test_ratio,
+        )
+        self._save_text_files(
+            path=self.cfg.dataset_dir,
+            train_text=train_text,
+            val_text=val_text,
+            test_text=test_text,
         )
