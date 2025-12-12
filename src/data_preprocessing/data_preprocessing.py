@@ -151,7 +151,7 @@ class DataPreprocessing:
             val_text.extend(val_words)
             test_text.extend(test_words)
 
-        self.logger.info("Train/val/test split completed.")
+        self.logger.info("'Train/val/test' split completed.")
         return (
             " ".join(train_text),
             " ".join(val_text),
@@ -160,13 +160,13 @@ class DataPreprocessing:
 
     def _save_text_files(self, path: str, **kwargs: str) -> None:
         self.logger.info(
-            f"Saving '{','.join(key.split(sep='_')[0] for key in kwargs.keys())}' at {path}."
+            f"Saving '{','.join(key.split(sep='_')[0] for key in kwargs)}' at {path}."
         )
         for key, value in kwargs.items():
             cleaned_folder_name = key.split(sep="_")[0]
             save_path = os.path.join(path, cleaned_folder_name)
             os.makedirs(name=save_path, exist_ok=True)
-            text_path = os.path.join(save_path, key + ".txt")
+            text_path = os.path.join(save_path, cleaned_folder_name + ".txt")
             with open(file=text_path, mode="w", encoding="utf-8") as f:
                 f.write(value)
             self.logger.info(f"Successfully saved '{cleaned_folder_name}'.")
