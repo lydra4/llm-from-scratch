@@ -42,6 +42,9 @@ class GenerateTokens:
         }
         return token_to_id
 
+    def _count_adjacent_token_pairs(self, token_ids: List[int]):
+        pass
+
     def tokenize_text(self) -> Any:
         byte_content, token_ids = self._convert_text_to_bytes(
             text=self.train_text,
