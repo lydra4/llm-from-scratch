@@ -16,4 +16,10 @@ def main(cfg: DictConfig):
     logger = logging.getLogger(__name__)
     logger.info("Setting up logging configuration.")
     setup_logging()
-    GenerateTokens(cfg=cfg, logger=logger)
+
+    token_generator = GenerateTokens(cfg=cfg, logger=logger)
+    token_generator.tokenize_text()
+
+
+if __name__ == "__main__":
+    main()
