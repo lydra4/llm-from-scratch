@@ -4,6 +4,7 @@ from collections import defaultdict
 from typing import Any, DefaultDict, Dict, List, Optional, Tuple
 
 from omegaconf import DictConfig
+from tqdm import tqdm
 
 
 class GenerateTokens:
@@ -51,7 +52,10 @@ class GenerateTokens:
         int,
     ]:
         bigram_freq: DefaultDict[Tuple[int, int], int] = defaultdict(int)
-        for i in range(len(token_ids) - 1):
+        for i in tqdm(
+            iterable=range(len(token_ids) - 1),
+            desc="Calculating bigram frequency",
+        ):
             pair = (token_ids[i], token_ids[i + 1])
             bigram_freq[pair] += 1
 
