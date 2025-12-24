@@ -1,6 +1,7 @@
 import logging
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from collections import defaultdict
+from typing import Any, DefaultDict, Dict, List, Optional, Tuple
 
 from omegaconf import DictConfig
 
@@ -42,13 +43,25 @@ class GenerateTokens:
         }
         return token_to_id
 
-    def _count_adjacent_token_pairs(self, token_ids: List[int]):
-        pass
+    def _count_adjacent_token_pairs(
+        self,
+        token_ids: List[int],
+    ) -> Dict[
+        Tuple[int, int],
+        int,
+    ]:
+        bigram_freq: DefaultDict[Tuple[int, int], int] = defaultdict(int)
+        for i in range(len(token_ids) - 1):
+            pair = (token_ids[i], token_ids[i + 1])
+            bigram_freq[pair] += 1
+
+        return bigram_freq
 
     def tokenize_text(self) -> Any:
         byte_content, token_ids = self._convert_text_to_bytes(
             text=self.train_text,
             encoding=self.cfg.character_encoding,
         )
-        token_to_id = self._init_vocab(byte_content=byte_content, token_ids=token_ids)
-        print(token_to_id)
+        # token_to_id = self._init_vocab(byte_content=byte_content, token_ids=token_ids)
+        bigram_freq = self._count_adjacent_token_pairs(token_ids=token_ids)
+        print(bigram_freq)
