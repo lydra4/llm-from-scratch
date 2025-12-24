@@ -13,7 +13,7 @@ class GenerateTokens:
         logger: Optional[logging.Logger] = None,
     ) -> None:
         self.cfg = cfg
-        self.logger = logger
+        self.logger = logger or logging.getLogger(__name__)
 
         train_path = os.path.join(self.cfg.data_path, "train", "train.txt")
         with open(file=train_path, mode="r", encoding="utf-8") as f:
@@ -58,6 +58,7 @@ class GenerateTokens:
         return bigram_freq
 
     def tokenize_text(self) -> Any:
+        self.logger.info("Tokenizing Text")
         byte_content, token_ids = self._convert_text_to_bytes(
             text=self.train_text,
             encoding=self.cfg.character_encoding,
