@@ -27,7 +27,6 @@ class GenerateTokens:
     ) -> Tuple[List[bytes], List[int]]:
         byte_sequence = text.encode(encoding)
         byte_content = [bytes([byte]) for byte in byte_sequence]
-        print(byte_content)
 
         token_ids = list(byte_sequence)
         return byte_content, token_ids
@@ -89,8 +88,24 @@ class GenerateTokens:
         byte_content: List[bytes],
         pair: Sequence[bytes],
         new_token: bytes,
-    ) -> None:
-        pass
+    ) -> List[bytes]:
+        assert len(pair) == 2, f"Must have only 2 items in pair, got {len(pair)}."
+
+        tokens = []
+        i = 0
+
+        while i < len(byte_content):
+            if (
+                (i < (len(byte_content) - 1))
+                and (byte_content[i] == pair[0])
+                and (byte_content[i + 1] == pair[1])
+            ):
+                tokens.append(new_token)
+                i += 2
+            else:
+                tokens.append(byte_content[i])
+                i += 1
+        return tokens
 
     def tokenize_text(self) -> Any:
         self.logger.info("Tokenizing Text")
@@ -100,4 +115,13 @@ class GenerateTokens:
         )
         vocab = self._init_vocab(byte_content=byte_content, token_ids=token_ids)
         bigram_freq = self._count_adjacent_token_pairs(token_ids=token_ids)
-        self._add_top_pair_to_vocab(vocab=vocab, bigram_freq=bigram_freq)
+        *pair, new_token = self._add_top_pair_to_vocab(
+            vocab=vocab,
+            bigram_freq=bigram_freq,
+        )
+        tokens = self._replace_pair(
+            byte_content=byte_content,
+            pair=pair,
+            new_token=new_token,
+        )
+        print(tokens)
