@@ -1,7 +1,7 @@
 import logging
 import os
 from collections import defaultdict
-from typing import Any, DefaultDict, Dict, List, Optional, Tuple
+from typing import Any, DefaultDict, Dict, List, Optional, Sequence, Tuple
 
 from omegaconf import DictConfig
 from tqdm import tqdm
@@ -27,6 +27,7 @@ class GenerateTokens:
     ) -> Tuple[List[bytes], List[int]]:
         byte_sequence = text.encode(encoding)
         byte_content = [bytes([byte]) for byte in byte_sequence]
+        print(byte_content)
 
         token_ids = list(byte_sequence)
         return byte_content, token_ids
@@ -73,7 +74,7 @@ class GenerateTokens:
         self,
         vocab: Dict[bytes, int],
         bigram_freq: Dict[Tuple[int, int], int],
-    ) -> None:
+    ) -> Tuple[bytes, bytes, bytes]:
         new_token_id = max(vocab.values()) + 1
         most_freq_bigram = max(bigram_freq, key=lambda k: bigram_freq[k])
         most_freq_bytes = tuple(
@@ -81,7 +82,15 @@ class GenerateTokens:
         )
         merged_token = b"".join(most_freq_bytes)
         vocab[merged_token] = new_token_id
-        print(vocab)
+        return most_freq_bytes[0], most_freq_bytes[1], merged_token
+
+    def _replace_pair(
+        self,
+        byte_content: List[bytes],
+        pair: Sequence[bytes],
+        new_token: bytes,
+    ) -> None:
+        pass
 
     def tokenize_text(self) -> Any:
         self.logger.info("Tokenizing Text")
