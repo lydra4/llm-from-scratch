@@ -38,11 +38,11 @@ class GenerateTokens:
     ) -> Dict[bytes, int]:
         unique_byte_content = list(set(byte_content))
         unique_token_ids = list(set(token_ids))
-        token_to_id = {
+        vocab = {
             byte_content: token_id
             for byte_content, token_id in zip(unique_byte_content, unique_token_ids)
         }
-        return token_to_id
+        return vocab
 
     def _count_adjacent_token_pairs(
         self,
@@ -59,7 +59,29 @@ class GenerateTokens:
             pair = (token_ids[i], token_ids[i + 1])
             bigram_freq[pair] += 1
 
-        return bigram_freq
+        sorted_bigram_freq = dict(
+            sorted(
+                bigram_freq.items(),
+                key=lambda item: item[1],
+                reverse=True,
+            )
+        )
+
+        return sorted_bigram_freq
+
+    def _add_top_pair_to_vocab(
+        self,
+        vocab: Dict[bytes, int],
+        bigram_freq: Dict[Tuple[int, int], int],
+    ) -> None:
+        new_token_id = max(vocab.values()) + 1
+        most_freq_bigram = max(bigram_freq, key=lambda k: bigram_freq[k])
+        most_freq_bytes = tuple(
+            key for val in most_freq_bigram for key, v in vocab.items() if v == val
+        )
+        merged_token = b"".join(most_freq_bytes)
+        vocab[merged_token] = new_token_id
+        print(vocab)
 
     def tokenize_text(self) -> Any:
         self.logger.info("Tokenizing Text")
@@ -67,6 +89,6 @@ class GenerateTokens:
             text=self.train_text,
             encoding=self.cfg.character_encoding,
         )
-        # token_to_id = self._init_vocab(byte_content=byte_content, token_ids=token_ids)
+        vocab = self._init_vocab(byte_content=byte_content, token_ids=token_ids)
         bigram_freq = self._count_adjacent_token_pairs(token_ids=token_ids)
-        print(bigram_freq)
+        self._add_top_pair_to_vocab(vocab=vocab, bigram_freq=bigram_freq)
