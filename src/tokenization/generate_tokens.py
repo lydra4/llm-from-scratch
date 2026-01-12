@@ -36,13 +36,7 @@ class GenerateTokens:
         byte_content: List[bytes],
         token_ids: List[int],
     ) -> Dict[bytes, int]:
-        unique_byte_content = list(set(byte_content))
-        unique_token_ids = list(set(token_ids))
-        vocab = {
-            byte_content: token_id
-            for byte_content, token_id in zip(unique_byte_content, unique_token_ids)
-        }
-        return vocab
+        return dict(zip(byte_content, token_ids))
 
     def _count_adjacent_token_pairs(
         self,
