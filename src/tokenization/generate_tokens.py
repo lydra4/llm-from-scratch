@@ -35,8 +35,11 @@ class GenerateTokens:
         self,
         byte_content: List[bytes],
         token_ids: List[int],
-    ) -> Dict[bytes, int]:
-        return dict(zip(byte_content, token_ids))
+    ) -> Tuple[Dict[bytes, int], Dict[int, bytes]]:
+        vocab = dict(zip(byte_content, token_ids))
+        id_to_bytes = {v: k for k, v in vocab.items()}
+
+        return vocab, id_to_bytes
 
     def _count_adjacent_token_pairs(
         self,
@@ -66,16 +69,20 @@ class GenerateTokens:
     def _add_top_pair_to_vocab(
         self,
         vocab: Dict[bytes, int],
+        id_to_bytes: Dict[int, bytes],
         bigram_freq: Dict[Tuple[int, int], int],
     ) -> Tuple[bytes, bytes, bytes]:
         new_token_id = max(vocab.values()) + 1
-        most_freq_bigram = max(bigram_freq, key=lambda k: bigram_freq[k])
-        most_freq_bytes = tuple(
-            key for val in most_freq_bigram for key, v in vocab.items() if v == val
-        )
-        merged_token = b"".join(most_freq_bytes)
+        id1, id2 = max(bigram_freq, key=lambda k: bigram_freq[k])
+
+        byte_1 = id_to_bytes[id1]
+        byte_2 = id_to_bytes[id2]
+        merged_token = byte_1 + byte_2
+
         vocab[merged_token] = new_token_id
-        return most_freq_bytes[0], most_freq_bytes[1], merged_token
+        id_to_bytes[new_token_id] = merged_token
+
+        return byte_1, byte_2, merged_token
 
     def _replace_pair(
         self,
@@ -107,10 +114,13 @@ class GenerateTokens:
             text=self.train_text,
             encoding=self.cfg.character_encoding,
         )
-        vocab = self._init_vocab(byte_content=byte_content, token_ids=token_ids)
+        vocab, id_to_bytes = self._init_vocab(
+            byte_content=byte_content, token_ids=token_ids
+        )
         bigram_freq = self._count_adjacent_token_pairs(token_ids=token_ids)
         *pair, new_token = self._add_top_pair_to_vocab(
             vocab=vocab,
+            id_to_bytes=id_to_bytes,
             bigram_freq=bigram_freq,
         )
         tokens = self._replace_pair(
