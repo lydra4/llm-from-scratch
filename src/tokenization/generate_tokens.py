@@ -36,10 +36,10 @@ class GenerateTokens:
         byte_content: List[bytes],
         token_ids: List[int],
     ) -> Tuple[Dict[bytes, int], Dict[int, bytes]]:
-        vocab = dict(zip(byte_content, token_ids))
-        id_to_bytes = {v: k for k, v in vocab.items()}
+        byte_to_id = dict(zip(byte_content, token_ids))
+        id_to_bytes = {v: k for k, v in byte_to_id.items()}
 
-        return vocab, id_to_bytes
+        return byte_to_id, id_to_bytes
 
     def _count_adjacent_token_pairs(
         self,
@@ -52,6 +52,7 @@ class GenerateTokens:
         for i in tqdm(
             iterable=range(len(token_ids) - 1),
             desc="Calculating bigram frequency",
+            leave=False,
         ):
             pair = (token_ids[i], token_ids[i + 1])
             bigram_freq[pair] += 1
@@ -68,18 +69,18 @@ class GenerateTokens:
 
     def _add_top_pair_to_vocab(
         self,
-        vocab: Dict[bytes, int],
+        byte_to_id: Dict[bytes, int],
         id_to_bytes: Dict[int, bytes],
         bigram_freq: Dict[Tuple[int, int], int],
     ) -> Tuple[bytes, bytes, bytes]:
-        new_token_id = max(vocab.values()) + 1
+        new_token_id = max(byte_to_id.values()) + 1
         id1, id2 = max(bigram_freq, key=lambda k: bigram_freq[k])
 
         byte_1 = id_to_bytes[id1]
         byte_2 = id_to_bytes[id2]
         merged_token = byte_1 + byte_2
 
-        vocab[merged_token] = new_token_id
+        byte_to_id[merged_token] = new_token_id
         id_to_bytes[new_token_id] = merged_token
 
         return byte_1, byte_2, merged_token
@@ -114,18 +115,25 @@ class GenerateTokens:
             text=self.train_text,
             encoding=self.cfg.character_encoding,
         )
-        vocab, id_to_bytes = self._init_vocab(
+        byte_to_id, id_to_bytes = self._init_vocab(
             byte_content=byte_content, token_ids=token_ids
         )
-        bigram_freq = self._count_adjacent_token_pairs(token_ids=token_ids)
-        *pair, new_token = self._add_top_pair_to_vocab(
-            vocab=vocab,
-            id_to_bytes=id_to_bytes,
-            bigram_freq=bigram_freq,
-        )
-        tokens = self._replace_pair(
-            byte_content=byte_content,
-            pair=pair,
-            new_token=new_token,
-        )
-        print(tokens)
+        tokens = []
+        num_merges_to_do = self.cfg.vocab_size - len(byte_to_id)
+
+        with tqdm(total=num_merges_to_do, desc="Performing BPE merges") as pbar:
+            while len(byte_to_id) < self.cfg.vocab_size:
+                bigram_freq = self._count_adjacent_token_pairs(token_ids=token_ids)
+                *pair, new_token = self._add_top_pair_to_vocab(
+                    byte_to_id=byte_to_id,
+                    id_to_bytes=id_to_bytes,
+                    bigram_freq=bigram_freq,
+                )
+                tokens = self._replace_pair(
+                    byte_content=byte_content,
+                    pair=pair,
+                    new_token=new_token,
+                )
+                pbar.update(1)
+
+        return tokens
