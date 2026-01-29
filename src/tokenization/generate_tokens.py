@@ -1,7 +1,8 @@
+import json
 import logging
 import os
 from collections import defaultdict
-from typing import Any, DefaultDict, Dict, List, Optional, Sequence, Tuple
+from typing import DefaultDict, Dict, List, Optional, Sequence, Tuple
 
 from omegaconf import DictConfig
 from tqdm import tqdm
@@ -36,10 +37,10 @@ class GenerateTokens:
         byte_content: List[bytes],
         token_ids: List[int],
     ) -> Tuple[Dict[bytes, int], Dict[int, bytes]]:
-        byte_to_id = dict(zip(byte_content, token_ids))
-        id_to_bytes = {v: k for k, v in byte_to_id.items()}
+        byte_to_token_id = dict(zip(byte_content, token_ids))
+        token_id_to_bytes = {v: k for k, v in byte_to_token_id.items()}
 
-        return byte_to_id, id_to_bytes
+        return byte_to_token_id, token_id_to_bytes
 
     def _count_adjacent_token_pairs(
         self,
@@ -90,7 +91,9 @@ class GenerateTokens:
         byte_content: List[bytes],
         pair: Sequence[bytes],
         new_token: bytes,
-    ) -> List[bytes]:
+        token_ids: List[int],
+        byte_to_token_id: Dict[bytes, int],
+    ) -> Tuple[List[bytes], List[int]]:
         assert len(pair) == 2, f"Must have only 2 items in pair, got {len(pair)}."
 
         tokens = []
@@ -107,33 +110,41 @@ class GenerateTokens:
             else:
                 tokens.append(byte_content[i])
                 i += 1
-        return tokens
 
-    def tokenize_text(self) -> Any:
+        token_ids = [byte_to_token_id[b] for b in byte_content]
+        return tokens, token_ids
+
+    def _save_dict(self, dict_to_save: Dict, path: str) -> None:
+        os.makedirs(name=path, exist_ok=True)
+        with open(file=path, mode="w") as file:
+            json.dump(dict_to_save, file, indent=4)
+
+    def tokenize_text(self) -> None:
         self.logger.info("Tokenizing Text")
         byte_content, token_ids = self._convert_text_to_bytes(
             text=self.train_text,
             encoding=self.cfg.character_encoding,
         )
-        byte_to_id, id_to_bytes = self._init_vocab(
+        byte_to_token_id, token_id_to_bytes = self._init_vocab(
             byte_content=byte_content, token_ids=token_ids
         )
-        tokens = []
-        num_merges_to_do = self.cfg.vocab_size - len(byte_to_id)
+        num_merges_to_do = self.cfg.vocab_size - len(byte_to_token_id)
 
         with tqdm(total=num_merges_to_do, desc="Performing BPE merges") as pbar:
-            while len(byte_to_id) < self.cfg.vocab_size:
+            while len(byte_to_token_id) < self.cfg.vocab_size:
                 bigram_freq = self._count_adjacent_token_pairs(token_ids=token_ids)
                 *pair, new_token = self._add_top_pair_to_vocab(
-                    byte_to_id=byte_to_id,
-                    id_to_bytes=id_to_bytes,
+                    byte_to_id=byte_to_token_id,
+                    id_to_bytes=token_id_to_bytes,
                     bigram_freq=bigram_freq,
                 )
-                tokens = self._replace_pair(
+                byte_content, token_ids = self._replace_pair(
                     byte_content=byte_content,
                     pair=pair,
                     new_token=new_token,
+                    token_ids=token_ids,
+                    byte_to_token_id=byte_to_token_id,
                 )
                 pbar.update(1)
 
-        return tokens
+        self._save_dict(dict_to_save=byte_to_token_id, path=self.cfg.dict_save_path)
