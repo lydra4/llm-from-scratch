@@ -91,12 +91,11 @@ class GenerateTokens:
         byte_content: List[bytes],
         pair: Sequence[bytes],
         new_token: bytes,
-        token_ids: List[int],
         byte_to_token_id: Dict[bytes, int],
     ) -> Tuple[List[bytes], List[int]]:
         assert len(pair) == 2, f"Must have only 2 items in pair, got {len(pair)}."
 
-        tokens = []
+        new_byte_content = []
         i = 0
 
         while i < len(byte_content):
@@ -105,19 +104,23 @@ class GenerateTokens:
                 and (byte_content[i] == pair[0])
                 and (byte_content[i + 1] == pair[1])
             ):
-                tokens.append(new_token)
+                new_byte_content.append(new_token)
                 i += 2
             else:
-                tokens.append(byte_content[i])
+                new_byte_content.append(byte_content[i])
                 i += 1
 
-        token_ids = [byte_to_token_id[b] for b in byte_content]
-        return tokens, token_ids
+        new_token_ids = [byte_to_token_id[b] for b in new_byte_content]
+        return new_byte_content, new_token_ids
 
     def _save_dict(self, dict_to_save: Dict, path: str) -> None:
-        os.makedirs(name=path, exist_ok=True)
-        with open(file=path, mode="w") as file:
-            json.dump(dict_to_save, file, indent=4)
+        folder = os.path.dirname(path)
+        os.makedirs(name=folder, exist_ok=True)
+
+        json_ready_dict = {str(k): v for k, v in dict_to_save.items()}
+
+        with open(file=path, mode="w", encoding="utf-8") as file:
+            json.dump(json_ready_dict, file, indent=4, ensure_ascii=False)
 
     def tokenize_text(self) -> None:
         self.logger.info("Tokenizing Text")
@@ -142,7 +145,6 @@ class GenerateTokens:
                     byte_content=byte_content,
                     pair=pair,
                     new_token=new_token,
-                    token_ids=token_ids,
                     byte_to_token_id=byte_to_token_id,
                 )
                 pbar.update(1)
