@@ -1,8 +1,8 @@
+import collections
 import json
 import logging
 import os
-from collections import defaultdict
-from typing import DefaultDict, Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple
 
 from omegaconf import DictConfig
 from tqdm import tqdm
@@ -49,22 +49,13 @@ class GenerateTokens:
         Tuple[int, int],
         int,
     ]:
-        bigram_freq: DefaultDict[Tuple[int, int], int] = defaultdict(int)
-        for i in tqdm(
-            iterable=range(len(token_ids) - 1),
-            desc="Calculating bigram frequency",
-            leave=False,
-        ):
-            pair = (token_ids[i], token_ids[i + 1])
-            bigram_freq[pair] += 1
-
-        sorted_bigram_freq = dict(
-            sorted(
-                bigram_freq.items(),
-                key=lambda item: item[1],
-                reverse=True,
+        bigram_freq = collections.Counter(
+            tqdm(
+                zip(token_ids, token_ids[1:]),
+                total=len(token_ids) - 1,
             )
         )
+        sorted_bigram_freq = dict(bigram_freq.most_common())
 
         return sorted_bigram_freq
 
