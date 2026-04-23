@@ -1,45 +1,46 @@
-FROM python:3.12.10-slim
-
-# Update OS libraries to latest patched versions
-# Update OS libraries
-RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends \
-    build-essential \
-    libssl-dev \
-    libffi-dev \
-    libsqlite3-dev \
-    ca-certificates \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+FROM python:3.12.10-slim-bookworm AS builder
 
 ARG DEBIAN_FRONTEND="noninteractive"
 
-ARG NON_ROOT_USER="llmfromscratch"
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libxml2-dev \
+    libxslt1-dev \
+    zlib1g-dev \
+    libgomp1 \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+COPY prod-requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r prod-requirements.txt
+
+FROM python:3.12.10-slim-bookworm
+
+ARG NON_ROOT_USER="template"
 ARG NON_ROOT_UID="2222"
 ARG NON_ROOT_GID="2222"
 ARG HOME_DIR="/home/${NON_ROOT_USER}"
 ARG REPO_DIR="."
 
-# Create group and user
-RUN groupadd -g ${NON_ROOT_GID} ${NON_ROOT_USER} && \
-    useradd -m -s /bin/bash -u ${NON_ROOT_UID} -g ${NON_ROOT_GID} ${NON_ROOT_USER}
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgomp1 \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
+RUN useradd -l -m -s /bin/bash -u ${NON_ROOT_UID} ${NON_ROOT_USER}
+
+COPY --from=builder /opt/venv /opt/venv
+
+ENV PATH="/opt/venv/bin:${HOME_DIR}/.local/bin:${PATH}"
 ENV PYTHONIOENCODING=utf8
-ENV LC_ALL="C.UTF-8"
-ENV PATH="/home/llmfromscratch/.local/bin:${PATH}"
-WORKDIR ${HOME_DIR}/${REPO_DIR}
 
-# Copy only the requirements file first to leverage Docker cache
-COPY ${REPO_DIR}/prod-requirements.txt ./prod-requirements.txt
+USER ${NON_ROOT_USER}
+WORKDIR ${HOME_DIR}
 
-# Install pip requirements as root into system site-packages so packages
-# are available regardless of runtime mounts that may overlay the user's home.
-RUN pip install --upgrade pip setuptools urllib3 && \
-    pip install --no-cache-dir -r prod-requirements.txt
-
-# Copy the rest of the application code and set correct ownership
 COPY --chown=${NON_ROOT_USER}:${NON_ROOT_GID} ${REPO_DIR} .
 
-# Switch to the non-root user for running the application
-USER ${NON_ROOT_USER}
+ENTRYPOINT ["python3"]
