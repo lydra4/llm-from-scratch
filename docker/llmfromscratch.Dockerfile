@@ -27,7 +27,8 @@ ARG NON_ROOT_GID="2222"
 ARG HOME_DIR="/home/${NON_ROOT_USER}"
 ARG REPO_DIR="."
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends \
     libgomp1 \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
