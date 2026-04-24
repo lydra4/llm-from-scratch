@@ -1,6 +1,7 @@
 import logging
 import logging.config
 import os
+from os import PathLike
 
 import yaml
 
@@ -23,3 +24,19 @@ def setup_logging(
         )
         logger.info(error)
         logger.info("Logging config file is not found. Basic config is used.")
+
+
+def to_native_path(path: str | PathLike) -> str:
+    if path is None:
+        raise TypeError("path cannot be None.")
+
+    s = os.fspath(path=path).strip()
+    if not s:
+        return s
+
+    if os.name == "nt":
+        s = s.replace("/", "\\")
+    else:
+        s = s.replace("\\", "/")
+
+    return os.path.normpath(path=s)
