@@ -1,5 +1,4 @@
 import logging
-import os
 
 import hydra
 from omegaconf import DictConfig
@@ -20,8 +19,6 @@ def main(cfg: DictConfig):
 
     token_generator = GenerateTokens(cfg=cfg, logger=logger)
     token_generator.tokenize_text()
-
-    os.system("shutdown /s /t 30")
 
 
 if __name__ == "__main__":
