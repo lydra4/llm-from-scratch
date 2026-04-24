@@ -4,7 +4,7 @@ from typing import Optional
 from omegaconf import DictConfig
 
 
-class Tokenzer:
+class Tokenizer:
     def __init__(
         self, cfg: DictConfig, logger: Optional[logging.Logger] = None
     ) -> None:
