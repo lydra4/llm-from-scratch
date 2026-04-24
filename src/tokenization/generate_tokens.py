@@ -2,7 +2,7 @@ import collections
 import json
 import logging
 import os
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Optional, Sequence, Tuple
 
 from omegaconf import DictConfig
 from tqdm import tqdm
@@ -17,15 +17,27 @@ class GenerateTokens:
         self.cfg = cfg
         self.logger = logger or logging.getLogger(__name__)
 
-        train_path = os.path.join(self.cfg.data_path, "train", "train.txt")
-        with open(file=train_path, mode="r", encoding="utf-8") as f:
-            self.train_text = f.read()
+    def _process_tokens(
+        self,
+        data_path: str,
+        encoding: str = "utf-8",
+        mode: str = "r",
+    ) -> str:
+        train_path = os.path.join(data_path, "train", "train.txt")
+        with open(
+            file=train_path,
+            encoding=encoding,
+            mode=mode,
+        ) as f:
+            train_text = f.read()
+
+        return train_text
 
     def _convert_text_to_bytes(
         self,
         text: str,
-        encoding: str,
-    ) -> Tuple[List[bytes], List[int]]:
+        encoding: str = "utf-8",
+    ) -> Tuple[list[bytes], list[int]]:
         byte_sequence = text.encode(encoding)
         byte_content = [bytes([byte]) for byte in byte_sequence]
 
@@ -34,9 +46,9 @@ class GenerateTokens:
 
     def _init_vocab(
         self,
-        byte_content: List[bytes],
-        token_ids: List[int],
-    ) -> Tuple[Dict[bytes, int], Dict[int, bytes]]:
+        byte_content: list[bytes],
+        token_ids: list[int],
+    ) -> Tuple[dict[bytes, int], dict[int, bytes]]:
         byte_to_token_id = dict(zip(byte_content, token_ids))
         token_id_to_bytes = {v: k for k, v in byte_to_token_id.items()}
 
@@ -44,8 +56,8 @@ class GenerateTokens:
 
     def _count_adjacent_token_pairs(
         self,
-        token_ids: List[int],
-    ) -> Dict[
+        token_ids: list[int],
+    ) -> dict[
         Tuple[int, int],
         int,
     ]:
@@ -61,9 +73,9 @@ class GenerateTokens:
 
     def _add_top_pair_to_vocab(
         self,
-        byte_to_id: Dict[bytes, int],
-        id_to_bytes: Dict[int, bytes],
-        bigram_freq: Dict[Tuple[int, int], int],
+        byte_to_id: dict[bytes, int],
+        id_to_bytes: dict[int, bytes],
+        bigram_freq: dict[Tuple[int, int], int],
     ) -> Tuple[bytes, bytes, bytes]:
         new_token_id = max(byte_to_id.values()) + 1
         id1, id2 = max(bigram_freq, key=lambda k: bigram_freq[k])
@@ -79,11 +91,11 @@ class GenerateTokens:
 
     def _replace_pair(
         self,
-        byte_content: List[bytes],
+        byte_content: list[bytes],
         pair: Sequence[bytes],
         new_token: bytes,
-        byte_to_token_id: Dict[bytes, int],
-    ) -> Tuple[List[bytes], List[int]]:
+        byte_to_token_id: dict[bytes, int],
+    ) -> Tuple[list[bytes], list[int]]:
         assert len(pair) == 2, f"Must have only 2 items in pair, got {len(pair)}."
 
         new_byte_content = []
@@ -104,7 +116,7 @@ class GenerateTokens:
         new_token_ids = [byte_to_token_id[b] for b in new_byte_content]
         return new_byte_content, new_token_ids
 
-    def _save_dict(self, dict_to_save: Dict, path: str) -> None:
+    def _save_dict(self, dict_to_save: dict, path: str) -> None:
         folder = os.path.dirname(path)
         os.makedirs(name=folder, exist_ok=True)
 
@@ -115,10 +127,9 @@ class GenerateTokens:
 
     def tokenize_text(self) -> None:
         self.logger.info("Tokenizing Text")
-        byte_content, token_ids = self._convert_text_to_bytes(
-            text=self.train_text,
-            encoding=self.cfg.character_encoding,
-        )
+        train_text = self._process_tokens(data_path=self.cfg.data_path)
+        byte_content, token_ids = self._convert_text_to_bytes(text=train_text)
+
         byte_to_token_id, token_id_to_bytes = self._init_vocab(
             byte_content=byte_content, token_ids=token_ids
         )
