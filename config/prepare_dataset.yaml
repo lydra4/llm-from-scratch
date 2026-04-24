@@ -1,2 +1,3 @@
 vocab_path: "./data/04-tokens/vocab.json"
 data_path: "./data/03-datasets"
+character_encoding: "utf-8"
