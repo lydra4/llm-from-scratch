@@ -89,10 +89,10 @@ class Tokenizer:
     def encode_all_text(self):
         vocab = self._parse_vocab_json(vocab_path=self.cfg.vocab_path)
 
-        for split_name, text in tqdm(
+        for split_name, text_content in tqdm(
             self._yield_dataset_paths(data_path=self.cfg.data_path),
             desc="Overall Progress",
         ):
             self.logger.info(f"Encoding '{split_name}' file.")
-            tokens_ids = self._encode(text=text, vocab=vocab)
+            tokens_ids = self._encode(text=text_content, vocab=vocab)
             print(tokens_ids)
