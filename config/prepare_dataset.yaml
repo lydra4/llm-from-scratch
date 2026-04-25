@@ -1,3 +1,4 @@
 vocab_path: "./data/04-tokens/vocab.json"
 data_path: "./data/03-datasets"
-character_encoding: "utf-8"
+save_path: "./data/05-pretokenized"
+text_files: ".txt"
