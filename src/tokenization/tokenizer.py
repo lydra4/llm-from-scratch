@@ -54,27 +54,29 @@ class Tokenizer:
         text_bytes = text.encode(encoding=encoding)
         tokens = [bytes([b]) for b in text_bytes]
 
-        with tqdm(total=(len(tokens) - 1), desc="Merging tokens", unit="iter") as pbar:
-            while len(tokens) >= 2:
-                lowest_pair_idx = None
-                lowest_vocab_id = float("inf")
+        while len(tokens) >= 2:
+            pairs = zip(tokens, tokens[1:])
+            best_pair = min(pairs, key=lambda p: vocab.get(p[0] + p[1], float("inf")))
+            merged_best = best_pair[0] + best_pair[1]
 
-                for i in range(len(tokens) - 1):
-                    pair = tokens[i] + tokens[i + 1]
+            if merged_best not in vocab:
+                break
 
-                    if pair in vocab and vocab[pair] < lowest_vocab_id:
-                        lowest_pair_idx = i
-                        lowest_vocab_id = vocab[pair]
+            new_tokens = []
+            i = 0
+            while i < len(tokens):
+                if (
+                    (i < len(tokens) - 1)
+                    and (tokens[i] == best_pair[0])
+                    and (tokens[i + 1] == best_pair[1])
+                ):
+                    new_tokens.append(merged_best)
+                    i += 2
+                else:
+                    new_tokens.append(tokens[i])
+                    i += 1
 
-                if lowest_pair_idx is None:
-                    break
-
-                i = lowest_pair_idx
-                merged_token = tokens[i] + tokens[i + 1]
-                tokens = tokens[:i] + [merged_token] + tokens[i + 2 :]
-
-                pbar.update(1)
-
+            tokens = new_tokens
         return [vocab[t] for t in tokens if t in vocab]
 
     def decode(
