@@ -14,7 +14,9 @@ from tqdm import tqdm
 
 class Tokenizer:
     def __init__(
-        self, cfg: DictConfig, logger: Optional[logging.Logger] = None
+        self,
+        cfg: DictConfig,
+        logger: Optional[logging.Logger] = None,
     ) -> None:
         self.cfg = cfg
         self.logger = logger or logging.getLogger(__name__)
@@ -172,7 +174,7 @@ class Tokenizer:
                 filename=split_name,
             )
 
-    def encode_all_text(self):
+    def encode_all_text(self) -> None:
         vocab = self._parse_vocab_json(vocab_path=self.cfg.vocab_path)
         datasets = list(self._yield_dataset_paths(data_path=self.cfg.data_path))
 
@@ -185,5 +187,7 @@ class Tokenizer:
 
         else:
             self._encode_sequential(
-                vocab=vocab, datasets=datasets, path=self.cfg.data_path
+                vocab=vocab,
+                datasets=datasets,
+                path=self.cfg.data_path,
             )
