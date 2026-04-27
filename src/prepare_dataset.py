@@ -3,7 +3,7 @@ import logging
 import hydra
 from omegaconf import DictConfig
 
-from tokenization.tokenizer import Tokenizer
+from tokenizer.tokenizer import Tokenizer
 from utils.general_utils import setup_logging
 
 

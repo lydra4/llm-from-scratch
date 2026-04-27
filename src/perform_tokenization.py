@@ -3,7 +3,7 @@ import logging
 import hydra
 from omegaconf import DictConfig
 
-from tokenization.generate_tokens import GenerateTokens
+from tokenizer.bpe_builder import BytePairEncoder
 from utils.general_utils import setup_logging
 
 
@@ -17,7 +17,7 @@ def main(cfg: DictConfig):
     logger.info("Setting up logging configuration.")
     setup_logging()
 
-    token_generator = GenerateTokens(cfg=cfg, logger=logger)
+    token_generator = BytePairEncoder(cfg=cfg, logger=logger)
     token_generator.tokenize_text()
 
 
