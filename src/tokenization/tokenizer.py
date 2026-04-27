@@ -53,10 +53,15 @@ class Tokenizer:
         path: str | PathLike,
         filename: str,
     ) -> None:
+        self.logger.info(f"Preparing to save '{filename}' tokens")
+
         tokens_array = np.array(object=tokens_ids, dtype=np.int16)
         save_path = os.path.join(path, filename)
         os.makedirs(name=save_path, exist_ok=True)
-        np.save(file=f"save_path/{filename}.npy", arr=tokens_array)
+        full_filepath = os.path.join(save_path, f"{filename}.npy")
+        np.save(file=full_filepath, arr=tokens_array)
+
+        self.logger.info(f"Saving of '{filename}' successfull.")
 
     def _encode(
         self,
@@ -116,7 +121,7 @@ class Tokenizer:
             self._yield_dataset_paths(data_path=self.cfg.data_path),
             desc="Overall Progress",
         ):
-            self.logger.info(f"Encoding '{split_name}' file.")
+            self.logger.info(f"Encoding '{split_name}' set.")
             tokens_ids = self._encode(text=text_content, vocab=vocab)
             self._save_tokens_list(
                 tokens_ids=tokens_ids,
