@@ -1,4 +1,5 @@
 import ast
+import concurrent.futures
 import json
 import logging
 import os
@@ -17,6 +18,15 @@ class Tokenizer:
     ) -> None:
         self.cfg = cfg
         self.logger = logger or logging.getLogger(__name__)
+
+    def decode(
+        self,
+        token_ids: list[int],
+        inverse_vocab: dict[int, bytes],
+        encoding: str = "utf-8",
+    ) -> str:
+        byte_sequence = b"".join([inverse_vocab.get(idx, b"") for idx in token_ids])
+        return byte_sequence.decode(encoding=encoding, errors="replace")
 
     def _parse_vocab_json(
         self,
@@ -63,17 +73,21 @@ class Tokenizer:
 
         self.logger.info(f"Saving of '{filename}' successfull.")
 
+    @staticmethod
     def _encode(
-        self,
         text: str,
         vocab: dict[bytes, int],
         encoding: str = "utf-8",
+        disable_pbar: bool = False,
     ) -> list[int]:
         text_bytes = text.encode(encoding=encoding)
         tokens = [bytes([b]) for b in text_bytes]
 
         with tqdm(
-            total=max(0, len(tokens) - 1), desc="BPE Merges", leave=False
+            total=max(0, len(tokens) - 1),
+            desc="BPE Merges",
+            leave=False,
+            disable=disable_pbar,
         ) as pbar:
             while len(tokens) >= 2:
                 pairs = zip(tokens, tokens[1:])
@@ -105,26 +119,71 @@ class Tokenizer:
 
         return [vocab[t] for t in tokens if t in vocab]
 
-    def decode(
+    def _encode_parallel(
         self,
-        token_ids: list[int],
-        inverse_vocab: dict[int, bytes],
-        encoding: str = "utf-8",
-    ) -> str:
-        byte_sequence = b"".join([inverse_vocab.get(idx, b"") for idx in token_ids])
-        return byte_sequence.decode(encoding=encoding, errors="replace")
+        vocab: dict[bytes, int],
+        datasets: list[tuple[str, str]],
+        path: str,
+    ) -> None:
+        self.logger.info("Encoding using multiprocessing.")
+
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            futures = {
+                executor.submit(
+                    self._encode,
+                    text=text_content,
+                    vocab=vocab,
+                    disable_pbar=True,
+                ): split_name
+                for split_name, text_content in datasets
+            }
+
+            for future in tqdm(
+                iterable=concurrent.futures.as_completed(futures),
+                total=len(datasets),
+                desc="Encoding(Multiprocessing)",
+            ):
+                split_name = futures[future]
+                try:
+                    token_ids = future.result()
+                    self._save_tokens_list(
+                        tokens_ids=token_ids, path=path, filename=split_name
+                    )
+                except Exception as e:
+                    self.logger.error(f"Error encoding {split_name}:{e}.")
+
+    def _encode_sequential(
+        self,
+        vocab: dict[bytes, int],
+        datasets: list[tuple[str, str]],
+        path: str,
+    ) -> None:
+        self.logger.info("Encoding using a processor.")
+
+        for split_name, text_content in tqdm(
+            iterable=datasets,
+            desc="Encoding(Single Processor)",
+        ):
+            self.logger.info(f"Encoding '{split_name}' set.")
+            token_ids = self._encode(text=text_content, vocab=vocab)
+            self._save_tokens_list(
+                tokens_ids=token_ids,
+                path=path,
+                filename=split_name,
+            )
 
     def encode_all_text(self):
         vocab = self._parse_vocab_json(vocab_path=self.cfg.vocab_path)
+        datasets = list(self._yield_dataset_paths(data_path=self.cfg.data_path))
 
-        for split_name, text_content in tqdm(
-            self._yield_dataset_paths(data_path=self.cfg.data_path),
-            desc="Overall Progress",
-        ):
-            self.logger.info(f"Encoding '{split_name}' set.")
-            tokens_ids = self._encode(text=text_content, vocab=vocab)
-            self._save_tokens_list(
-                tokens_ids=tokens_ids,
+        if self.cfg.use_multiprocessing:
+            self._encode_parallel(
+                vocab=vocab,
+                datasets=datasets,
                 path=self.cfg.save_path,
-                filename=split_name,
+            )
+
+        else:
+            self._encode_sequential(
+                vocab=vocab, datasets=datasets, path=self.cfg.data_path
             )
