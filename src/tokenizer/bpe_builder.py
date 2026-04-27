@@ -8,7 +8,7 @@ from omegaconf import DictConfig
 from tqdm import tqdm
 
 
-class GenerateTokens:
+class BytePairEncoder:
     def __init__(
         self,
         cfg: DictConfig,
