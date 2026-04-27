@@ -1,6 +1,7 @@
 import ast
 import json
 import logging
+import os
 from os import PathLike
 from pathlib import Path
 from typing import Iterator, Optional
@@ -46,9 +47,16 @@ class Tokenizer:
 
             yield folder_name, text_content
 
-    def _save_tokens_list(self, tokens_list: list[int], path: str | PathLike) -> None:
-        tokens_array = np.array(object=tokens_list, dtype=np.int16)
-        np.save(file=path, arr=tokens_array)
+    def _save_tokens_list(
+        self,
+        tokens_ids: list[int],
+        path: str | PathLike,
+        filename: str,
+    ) -> None:
+        tokens_array = np.array(object=tokens_ids, dtype=np.int16)
+        save_path = os.path.join(path, filename)
+        os.makedirs(name=save_path, exist_ok=True)
+        np.save(file=f"save_path/{filename}.npy", arr=tokens_array)
 
     def _encode(
         self,
@@ -59,29 +67,37 @@ class Tokenizer:
         text_bytes = text.encode(encoding=encoding)
         tokens = [bytes([b]) for b in text_bytes]
 
-        while len(tokens) >= 2:
-            pairs = zip(tokens, tokens[1:])
-            best_pair = min(pairs, key=lambda p: vocab.get(p[0] + p[1], float("inf")))
-            merged_best = best_pair[0] + best_pair[1]
+        with tqdm(
+            total=max(0, len(tokens) - 1), desc="BPE Merges", leave=False
+        ) as pbar:
+            while len(tokens) >= 2:
+                pairs = zip(tokens, tokens[1:])
+                best_pair = min(
+                    pairs, key=lambda p: vocab.get(p[0] + p[1], float("inf"))
+                )
+                merged_best = best_pair[0] + best_pair[1]
 
-            if merged_best not in vocab:
-                break
+                if merged_best not in vocab:
+                    break
 
-            new_tokens = []
-            i = 0
-            while i < len(tokens):
-                if (
-                    (i < len(tokens) - 1)
-                    and (tokens[i] == best_pair[0])
-                    and (tokens[i + 1] == best_pair[1])
-                ):
-                    new_tokens.append(merged_best)
-                    i += 2
-                else:
-                    new_tokens.append(tokens[i])
-                    i += 1
+                new_tokens = []
+                i = 0
+                while i < len(tokens):
+                    if (
+                        (i < len(tokens) - 1)
+                        and (tokens[i] == best_pair[0])
+                        and (tokens[i + 1] == best_pair[1])
+                    ):
+                        new_tokens.append(merged_best)
+                        i += 2
+                    else:
+                        new_tokens.append(tokens[i])
+                        i += 1
 
-            tokens = new_tokens
+                tokens_removed = len(tokens) - len(new_tokens)
+                pbar.update(tokens_removed)
+                tokens = new_tokens
+
         return [vocab[t] for t in tokens if t in vocab]
 
     def decode(
@@ -102,4 +118,8 @@ class Tokenizer:
         ):
             self.logger.info(f"Encoding '{split_name}' file.")
             tokens_ids = self._encode(text=text_content, vocab=vocab)
-            print(tokens_ids)
+            self._save_tokens_list(
+                tokens_ids=tokens_ids,
+                path=self.cfg.save_path,
+                filename=split_name,
+            )
