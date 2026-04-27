@@ -5,6 +5,7 @@ from os import PathLike
 from pathlib import Path
 from typing import Iterator, Optional
 
+import numpy as np
 from omegaconf import DictConfig
 from tqdm import tqdm
 
@@ -44,6 +45,10 @@ class Tokenizer:
             text_content = path.read_text(encoding=encoding)
 
             yield folder_name, text_content
+
+    def _save_tokens_list(self, tokens_list: list[int], path: str | PathLike) -> None:
+        tokens_array = np.array(object=tokens_list, dtype=np.int16)
+        np.save(file=path, arr=tokens_array)
 
     def _encode(
         self,
