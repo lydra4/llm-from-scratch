@@ -2,6 +2,7 @@ import ast
 import concurrent.futures
 import json
 import logging
+import multiprocessing
 import os
 from os import PathLike
 from pathlib import Path
@@ -81,20 +82,26 @@ class BPETokenizer:
         vocab: dict[bytes, int],
         encoding: str = "utf-8",
         disable_pbar: bool = False,
+        pbar_desc: str = "BPE Merges",
     ) -> list[int]:
         text_bytes = text.encode(encoding=encoding)
         tokens = [bytes([b]) for b in text_bytes]
+
+        identity = multiprocessing.current_process()._identity
+        pos = identity[0] if identity else 1
 
         with tqdm(
             total=max(0, len(tokens) - 1),
             desc="BPE Merges",
             leave=False,
             disable=disable_pbar,
+            position=pos,
         ) as pbar:
             while len(tokens) >= 2:
                 pairs = zip(tokens, tokens[1:])
                 best_pair = min(
-                    pairs, key=lambda p: vocab.get(p[0] + p[1], float("inf"))
+                    pairs,
+                    key=lambda p: vocab.get(p[0] + p[1], float("inf")),
                 )
                 merged_best = best_pair[0] + best_pair[1]
 
@@ -135,7 +142,8 @@ class BPETokenizer:
                     self._encode,
                     text=text_content,
                     vocab=vocab,
-                    disable_pbar=True,
+                    disable_pbar=False,
+                    pbar_desc=f"Worker | {split_name}",
                 ): split_name
                 for split_name, text_content in datasets
             }
@@ -144,12 +152,16 @@ class BPETokenizer:
                 iterable=concurrent.futures.as_completed(futures),
                 total=len(datasets),
                 desc="Encoding(Multiprocessing)",
+                position=0,
+                leave=True,
             ):
                 split_name = futures[future]
                 try:
                     token_ids = future.result()
                     self._save_tokens_list(
-                        tokens_ids=token_ids, path=path, filename=split_name
+                        tokens_ids=token_ids,
+                        path=path,
+                        filename=split_name,
                     )
                 except Exception as e:
                     self.logger.error(f"Error encoding {split_name}:{e}.")
@@ -165,9 +177,16 @@ class BPETokenizer:
         for split_name, text_content in tqdm(
             iterable=datasets,
             desc="Encoding(Single Processor)",
+            position=0,
+            leave=True,
         ):
             self.logger.info(f"Encoding '{split_name}' set.")
-            token_ids = self._encode(text=text_content, vocab=vocab)
+            token_ids = self._encode(
+                text=text_content,
+                vocab=vocab,
+                disable_pbar=False,
+                pbar_desc=f"Merges | {split_name}",
+            )
             self._save_tokens_list(
                 tokens_ids=token_ids,
                 path=path,
