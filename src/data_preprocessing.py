@@ -10,7 +10,7 @@ from utils.general_utils import setup_logging
 @hydra.main(
     version_base=None,
     config_path="../config",
-    config_name="data_processing.yaml",
+    config_name="data_preprocessing.yaml",
 )
 def main(cfg: DictConfig):
     logger = logging.getLogger(__name__)
