@@ -92,7 +92,7 @@ class BPETokenizer:
 
         with tqdm(
             total=max(0, len(tokens) - 1),
-            desc="BPE Merges",
+            desc=pbar_desc,
             leave=False,
             disable=disable_pbar,
             position=pos,
