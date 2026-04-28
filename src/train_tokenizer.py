@@ -10,15 +10,15 @@ from utils.general_utils import setup_logging
 @hydra.main(
     version_base=None,
     config_path="../config",
-    config_name="tokenization.yaml",
+    config_name="bpe.yaml",
 )
 def main(cfg: DictConfig):
     logger = logging.getLogger(__name__)
     logger.info("Setting up logging configuration.")
     setup_logging()
 
-    token_generator = BytePairEncoder(cfg=cfg, logger=logger)
-    token_generator.tokenize_text()
+    bytepair_encoder = BytePairEncoder(cfg=cfg, logger=logger)
+    bytepair_encoder.tokenize_text()
 
 
 if __name__ == "__main__":
