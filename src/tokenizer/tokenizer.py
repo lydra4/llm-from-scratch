@@ -12,7 +12,7 @@ from omegaconf import DictConfig
 from tqdm import tqdm
 
 
-class Tokenizer:
+class BPETokenizer:
     def __init__(
         self,
         cfg: DictConfig,
