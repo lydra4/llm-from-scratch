@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-ENV_NAME="llmfromscratch"
+ENV_NAME="llmfromscratch-gpu"
 
 OS_TYPE="unknown"
 case "$(uname -s)" in
