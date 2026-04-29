@@ -17,7 +17,7 @@ class BPEBuilder:
         self.cfg = cfg
         self.logger = logger or logging.getLogger(__name__)
 
-    def _process_tokens(
+    def _load_training_text(
         self,
         data_path: str,
         encoding: str = "utf-8",
@@ -54,7 +54,7 @@ class BPEBuilder:
 
         return byte_to_token_id, token_id_to_bytes
 
-    def _count_adjacent_token_pairs(
+    def _count_bigram_frequencies(
         self,
         token_ids: list[int],
     ) -> dict[
@@ -116,7 +116,7 @@ class BPEBuilder:
         new_token_ids = [byte_to_token_id[b] for b in new_byte_content]
         return new_byte_content, new_token_ids
 
-    def _save_dict(self, dict_to_save: dict, path: str) -> None:
+    def _save_vocabulary(self, dict_to_save: dict, path: str) -> None:
         folder = os.path.dirname(path)
         os.makedirs(name=folder, exist_ok=True)
 
@@ -125,9 +125,9 @@ class BPEBuilder:
         with open(file=path, mode="w", encoding="utf-8") as file:
             json.dump(json_ready_dict, file, indent=4, ensure_ascii=False)
 
-    def tokenize_text(self) -> None:
+    def build_vocabulary(self) -> None:
         self.logger.info("Tokenizing Text")
-        train_text = self._process_tokens(data_path=self.cfg.data_path)
+        train_text = self._load_training_text(data_path=self.cfg.data_path)
         byte_content, token_ids = self._convert_text_to_bytes(text=train_text)
 
         byte_to_token_id, token_id_to_bytes = self._init_vocab(
@@ -137,7 +137,7 @@ class BPEBuilder:
 
         with tqdm(total=num_merges_to_do, desc="Performing BPE merges") as pbar:
             while len(byte_to_token_id) < self.cfg.vocab_size:
-                bigram_freq = self._count_adjacent_token_pairs(token_ids=token_ids)
+                bigram_freq = self._count_bigram_frequencies(token_ids=token_ids)
                 *pair, new_token = self._add_top_pair_to_vocab(
                     byte_to_id=byte_to_token_id,
                     id_to_bytes=token_id_to_bytes,
@@ -151,4 +151,6 @@ class BPEBuilder:
                 )
                 pbar.update(1)
 
-        self._save_dict(dict_to_save=byte_to_token_id, path=self.cfg.dict_save_path)
+        self._save_vocabulary(
+            dict_to_save=byte_to_token_id, path=self.cfg.dict_save_path
+        )
