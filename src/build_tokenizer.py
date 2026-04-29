@@ -10,7 +10,7 @@ from utils.general_utils import setup_logging
 @hydra.main(
     version_base=None,
     config_path="../config",
-    config_name="bpe.yaml",
+    config_name="bpe_tokenizer.yaml",
 )
 def main(cfg: DictConfig):
     logger = logging.getLogger(__name__)
