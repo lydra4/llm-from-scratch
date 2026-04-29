@@ -5,8 +5,8 @@ channels:
   - conda-forge
 dependencies:
   - python=3.12.10
-  - pytorch
-  - pytorch-cuda
+  - pytorch=2.5.1
+  - pytorch-cuda=12.4
   - pip=24.3
   - pip:
       - -r prod-requirements.txt
