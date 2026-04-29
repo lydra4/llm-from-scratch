@@ -2,11 +2,11 @@ set -e
 
 eval "$(mamba shell hook --shell bash)"
 
-echo "🚀 Creating environment from env.yaml ..."
-mamba env create -f env.yaml -y
+echo "🚀 Creating environment from env-gpu.yaml ..."
+mamba env create -f env-gpu.yaml -y
 echo "✅ Environment created."
 
-ENV_NAME=$(grep -E '^name:' env.yaml | awk '{print $2}')
+ENV_NAME=$(grep -E '^name:' env-gpu.yaml | awk '{print $2}')
 
 echo "🔧 Activating environment: $ENV_NAME ..."
 mamba activate "$ENV_NAME"
