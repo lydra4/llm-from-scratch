@@ -15,3 +15,5 @@ val:
   loader:
     batch_size: 32
     shuffle: False
+
+model:
