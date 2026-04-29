@@ -8,7 +8,7 @@ from omegaconf import DictConfig
 from tqdm import tqdm
 
 
-class BytePairEncoder:
+class BPEBuilder:
     def __init__(
         self,
         cfg: DictConfig,

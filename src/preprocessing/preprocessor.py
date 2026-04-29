@@ -11,7 +11,7 @@ from omegaconf import DictConfig
 from tqdm import tqdm
 
 
-class DataPreprocessing:
+class DataPreprocessor:
     def __init__(
         self,
         cfg: DictConfig,
