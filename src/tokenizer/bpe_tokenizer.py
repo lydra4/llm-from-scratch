@@ -60,7 +60,7 @@ class BPETokenizer:
 
             yield folder_name, text_content
 
-    def _save_tokens_list(
+    def _save_token_ids_as_array(
         self,
         tokens_ids: list[int],
         path: str | PathLike,
@@ -158,7 +158,7 @@ class BPETokenizer:
                 split_name = futures[future]
                 try:
                     token_ids = future.result()
-                    self._save_tokens_list(
+                    self._save_token_ids_as_array(
                         tokens_ids=token_ids,
                         path=path,
                         filename=split_name,
@@ -187,7 +187,7 @@ class BPETokenizer:
                 disable_pbar=False,
                 pbar_desc=f"Merges | {split_name}",
             )
-            self._save_tokens_list(
+            self._save_token_ids_as_array(
                 tokens_ids=token_ids,
                 path=path,
                 filename=split_name,
