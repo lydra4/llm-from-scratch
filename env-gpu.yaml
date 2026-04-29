@@ -1,9 +1,12 @@
-name: llmfromscratch
+name: llmfromscratch-gpu
 channels:
+  - pytorch
+  - nvidia
   - conda-forge
-  - defaults
 dependencies:
   - python=3.12.10
+  - pytorch
+  - pytorch-cuda
   - pip=24.3
   - pip:
       - -r prod-requirements.txt

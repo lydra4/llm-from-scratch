@@ -1,0 +1,13 @@
+name: llmfromscratch-cpu
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12.10
+  - pytorch
+  - cpuonly
+  - pip=24.3
+  - pip:
+      - -r prod-requirements.txt
+      - -r dev-requirements.txt
