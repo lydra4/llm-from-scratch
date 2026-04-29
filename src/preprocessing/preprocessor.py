@@ -107,7 +107,7 @@ class DataPreprocessor:
         cleaned_text = re.sub(r"\n{2,}", "\n", cleaned_text)
         return cleaned_text.strip()
 
-    def _save_file(self, processed_path: str, title: str, text: str) -> None:
+    def _save_processed_text(self, processed_path: str, title: str, text: str) -> None:
         processed_dir = os.path.join(processed_path, title)
         os.makedirs(name=processed_dir, exist_ok=True)
         processed_path = f"{processed_dir}/{title}.txt"
@@ -158,7 +158,7 @@ class DataPreprocessor:
             " ".join(test_text),
         )
 
-    def _save_text_files(self, path: str, **kwargs: str) -> None:
+    def _save_dataset_splits(self, path: str, **kwargs: str) -> None:
         self.logger.info(
             f"Saving '{','.join(key.split(sep='_')[0] for key in kwargs)}' at {path}."
         )
@@ -171,7 +171,7 @@ class DataPreprocessor:
                 f.write(value)
             self.logger.info(f"Successfully saved '{cleaned_folder_name}'.")
 
-    def perform_processing(self):
+    def preprocess_dataset(self):
         epub_dict = self._list_files_by_extension(
             path=self.cfg.raw_epub_dir, extension=".epub"
         )
@@ -179,7 +179,7 @@ class DataPreprocessor:
             self.logger.info(f"Cleaning '{title}' books.")
             raw_text = self._extract_epub_books(epub_list=epub_list)
             clean_text = self._clean_text(text=raw_text)
-            self._save_file(
+            self._save_processed_text(
                 processed_path=self.cfg.processed_dir,
                 title=title,
                 text=clean_text,
@@ -195,7 +195,7 @@ class DataPreprocessor:
             val_ratio=self.cfg.val_ratio,
             test_ratio=self.cfg.test_ratio,
         )
-        self._save_text_files(
+        self._save_dataset_splits(
             path=self.cfg.dataset_dir,
             train_text=train_text,
             val_text=val_text,
