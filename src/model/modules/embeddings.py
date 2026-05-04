@@ -17,7 +17,8 @@ class TransformerEmbeddings(nn.Module):
         self.cfg = cfg
         self.logger = logger or logging.getLogger(__name__)
 
-        self.d_model = self.cfg.d_model
+        self.d_model = self.cfg.model.d_model
+
         self.token_embeddings = nn.Embedding(
             num_embeddings=self.cfg.model.vocab_size,
             embedding_dim=self.cfg.model.d_model,
@@ -40,6 +41,7 @@ class TransformerEmbeddings(nn.Module):
             end=context_window,
             dtype=torch.float,
         ).unsqueeze(1)
+
         div_term = torch.exp(
             input=torch.arange(start=0, end=d_model, step=2).float()
             * (-math.log(10_000.0) / d_model)
