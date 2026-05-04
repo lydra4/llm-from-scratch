@@ -1,5 +1,4 @@
 import logging
-import math
 from typing import Optional
 
 import torch
@@ -12,7 +11,7 @@ class CausalSelfAttention(nn.Module):
     def __init__(
         self,
         cfg: DictConfig,
-        logger: Optional[logging.Logger],
+        logger: Optional[logging.Logger] = None,
     ) -> None:
         super().__init__()
         self.cfg = cfg
@@ -24,6 +23,7 @@ class CausalSelfAttention(nn.Module):
 
         assert self.d_model % self.n_heads == 0, "d_model must be divisible by n_heads"
 
+        self.dropout = self.cfg.model.get("dropout", 0.1)
         self.c_attn = nn.Linear(
             in_features=self.d_model,
             out_features=(3 * self.d_model),
@@ -33,13 +33,6 @@ class CausalSelfAttention(nn.Module):
             in_features=self.d_model,
             out_features=self.d_model,
             bias=False,
-        )
-
-        context_window = self.cfg.model.context_window
-        mask = torch.tril(input=torch.ones(size=(context_window, context_window)))
-        self.register_buffer(
-            name="bias",
-            tensor=mask.view(1, 1, context_window, context_window),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -52,10 +45,14 @@ class CausalSelfAttention(nn.Module):
         q = q.view(b, t, self.n_heads, self.head_dim).transpose(1, 2)
         v = v.view(b, t, self.n_heads, self.head_dim).transpose(1, 2)
 
-        attn = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
-        attn = F.softmax(input=attn, dim=-1)
+        y = F.scaled_dot_product_attention(
+            query=q,
+            key=k,
+            value=v,
+            is_causal=True,
+            dropout_p=self.dropout if self.training else 0.0,
+        )
 
-        y = attn @ v
-        y = y.transpose(1, 2).contiguouse.view(b, t, c)
+        y = y.transpose(1, 2).contiguous().view(b, t, c)
 
         return self.c_proj(y)
