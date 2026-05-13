@@ -1,8 +1,13 @@
 defaults:
   - encoding
+  - bpe_tokenizer
+  - optimizer: adamw
+  - criterion: cross_entropy
+  - hardware: local
+  - _self_
 
 dataset:
-  context_window: 2048
+  context_window: 2_048
 
 train:
   data_path: ${encoding.save_path}/train/train.npy
@@ -17,3 +22,5 @@ val:
     shuffle: False
 
 model:
+  epochs: 100
+  vocab_size: ${bpe_tokenizer.vocab_size}
