@@ -1,11 +1,14 @@
 import logging
 
 import hydra
+import torch
 from omegaconf import DictConfig
-from torch.utils.data import DataLoader
+from tqdm import tqdm
 
-from dataset.token_dataset import TokenDataset
+from dataset.dataloaders import create_dataloaders
+from training.trainer import train_epoch, validate_epoch
 from utils.general_utils import setup_logging
+from utils.setup import setup_model_and_components
 
 
 @hydra.main(
@@ -18,20 +21,41 @@ def main(cfg: DictConfig):
     logger.info("Setting up logging configuration.")
     setup_logging()
 
-    train_dataset = TokenDataset(
-        data_path=cfg.train.data_path,
-        context_window=cfg.dataset.context_window,
-        logger=logger,
-    )
-    train_loader = DataLoader(dataset=train_dataset, **cfg.train.loader)
+    device = torch.device(device=cfg.hardware.device)
+    logger.info(f"Training model on {device}.")
 
-    val_dataset = TokenDataset(
-        data_path=cfg.val.data_path,
-        context_window=cfg.dataset.context_window,
+    train_loader, val_loader = create_dataloaders(cfg=cfg, logger=logger)
+
+    model, optimizer, criterion = setup_model_and_components(
+        cfg=cfg,
+        device=device,
         logger=logger,
     )
-    val_loader = DataLoader(dataset=val_dataset, **cfg.val.loader)
-    print(train_loader, val_loader)
+
+    logger.info("Training....")
+    for epoch in tqdm(iterable=range(cfg.model.epochs)):
+        train_loss = train_epoch(
+            model=model,
+            train_loader=train_loader,
+            optimizer=optimizer,
+            criterion=criterion,
+            device=device,
+            cfg=cfg,
+            logger=logger,
+            epoch=epoch,
+        )
+
+        val_loss = validate_epoch(
+            model=model,
+            val_loader=val_loader,
+            criterion=criterion,
+            device=device,
+            cfg=cfg,
+            logger=logger,
+            epoch=epoch,
+        )
+
+        print(train_loss, val_loss)
 
 
 if __name__ == "__main__":
