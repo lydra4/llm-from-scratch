@@ -7,7 +7,7 @@ dependencies:
   - python=3.12.10
   - pytorch=2.5.1
   - cpuonly=2.0
-  - pip=24.3
+  - pip=26.1.1
   - pip:
       - -r prod-requirements.txt
       - -r dev-requirements.txt
