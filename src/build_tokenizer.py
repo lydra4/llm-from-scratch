@@ -18,7 +18,7 @@ def main(cfg: DictConfig):
     setup_logging()
 
     bytepair_builder = BPEBuilder(cfg=cfg, logger=logger)
-    bytepair_builder.tokenize_text()
+    bytepair_builder.build_vocabulary()
 
 
 if __name__ == "__main__":
