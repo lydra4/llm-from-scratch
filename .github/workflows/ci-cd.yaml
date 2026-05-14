@@ -78,7 +78,7 @@ jobs:
   build-test-push:
     name: Docker Build, Scan & Push
     runs-on: ubuntu-latest
-    needs: lint-typecheck-typecheck
+    needs: lint-typecheck
     permissions:
       contents: read
       packages: write
