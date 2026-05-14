@@ -18,7 +18,7 @@ def main(cfg: DictConfig):
     setup_logging()
 
     data_preprocessing = DataPreprocessor(cfg=cfg, logger=logger)
-    data_preprocessing.perform_processing()
+    data_preprocessing.preprocess_dataset()
 
 
 if __name__ == "__main__":
