@@ -45,24 +45,6 @@ jobs:
       - name: Pre-commit Hooks
         run: pre-commit run --all-files
 
-      - name: Create Strict mypy Config
-        run: |
-          cat > .github/workflows/mypy.ini << "EOF"
-          [mypy]
-          strict = True
-          warn_return_any = True
-          warn_unused_configs = True
-          disallow_untyped_defs = True
-          disallow_incomplete_defs = True
-          no_implicit_optional = True
-          warn_redundant_casts = True
-          warn_unused_ignores = True
-          warn_no_return = True
-          warn_unreachable = True
-          namespace_packages = True
-          explicit_package_bases = True
-          EOF
-
       - name: Run mypy
         run: mypy --config-file .github/workflows/mypy.ini src
 
