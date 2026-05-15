@@ -2,9 +2,11 @@ name: llm-from-scratch
 
 on:
   push:
-    branches: [main]
+    branches:
+      - $default-branch
   pull_request:
-    branches: [main]
+    branches:
+      - $default-branch
   workflow_dispatch: {}
 
 env:
