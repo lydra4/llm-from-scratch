@@ -2,7 +2,8 @@ import logging
 import os
 import re
 import unicodedata
-from typing import Dict, List, Optional, Tuple
+from os import PathLike
+from typing import Dict, Optional
 
 import ebooklib
 from bs4 import BeautifulSoup
@@ -44,7 +45,7 @@ class DataPreprocessor:
         self,
         path: str,
         extension: str,
-    ) -> Dict[str, List[str]]:
+    ) -> Dict[str, list[str]]:
         walks = [
             (os.path.basename(dirpath), dirpath, filenames)
             for dirpath, _, filenames in os.walk(path)
@@ -67,7 +68,105 @@ class DataPreprocessor:
         self.logger.warning(f"{filename} has no number.")
         return 9999
 
-    def _extract_epub_books(self, epub_list: List[str]) -> str:
+    def _validate_epub(self, epub_path: str) -> bool:
+        if not epub_path.endswith(".epub"):
+            raise ValueError(f"Not an EPUB file: {epub_path}.")
+
+        if not os.path.exists(epub_path):
+            raise FileNotFoundError(f"EPUB not found: {epub_path}.")
+
+        try:
+            book = epub.read_epub(epub_path)
+            if len(book.spine) == 0:
+                raise ValueError("EPUB has not content (empty spine).")
+            self.logger.info(f"EPUB valid: {len(book.spine)} items in spine.")
+            return True
+        except Exception as e:
+            raise ValueError(f"Invalid EPUB: {e}.")
+
+    def _validate_raw_text(self, text: str, text_label: str = "text") -> None:
+        if not isinstance(text, str):
+            raise TypeError(f"Expected str for {text_label}, got {type(text)}")
+
+        if len(text.strip()) == 0:
+            raise ValueError(f"{text_label} is empty after stripping whitespace")
+
+        if "\ufffd" in text:
+            self.logger.warning(
+                f"{text_label} contains replacement characters (encoding issues)"
+            )
+
+        try:
+            text.encode("utf-8").decode("utf-8")
+        except UnicodeDecodeError as e:
+            raise ValueError(f"{text_label} contains invalid UTF-8: {e}") from e
+
+        self.logger.info(f"{text_label} validation passed: {len(text)} chars")
+
+    def _validate_split_ratio(
+        self, train_ratio: float, val_ratio: float, test_ratio: float
+    ) -> None:
+        for ratio, name in [
+            (train_ratio, "train"),
+            (val_ratio, "val"),
+            (test_ratio, "test"),
+        ]:
+            if not isinstance(ratio, (int, float)):
+                raise TypeError(f"{name}_ratio must be numeric, got {type(ratio)}.")
+            if not 0 <= ratio <= 1:
+                raise ValueError(f"{name}_ratio must be in [0,1], got {ratio}.")
+
+            total = train_ratio + val_ratio + test_ratio
+            if not abs(total - 1.0) < 1e-9:
+                raise ValueError(f"Ratios must sum to 1.0, got {total}.")
+
+            min_ratio = min(train_ratio, val_ratio, test_ratio)
+            if min_ratio < 0.1:
+                self.logger.warning(
+                    f"Imbalanced split detected: min ratio = {min_ratio}."
+                )
+
+    def _validate_dataset_splits(
+        self,
+        train_text: str,
+        val_text: str,
+        test_text: str,
+    ) -> dict[str, int]:
+        splits = {"train": train_text, "val": val_text, "test": test_text}
+        stats = {}
+
+        for split_name, text in splits.items():
+            word_count = len(text.split())
+
+            if word_count == 0:
+                raise ValueError(f"{split_name} split is empty!")
+
+            stats[split_name] = word_count
+            self.logger.info(f"{split_name}: {word_count} words.")
+
+        total_words = sum(stats.values())
+        for split_name, count in stats.items():
+            ratio = count / total_words
+            self.logger.info(f"{split_name} ratio: {ratio:.1f%}")
+
+        return stats
+
+    def _validate_saved_file(self, file_path: str | PathLike) -> bool:
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not saved: {file_path}.")
+
+        try:
+            with open(file=file_path, mode="r", encoding="utf-8") as f:
+                content = f.read(1_000)
+                if len(content) == 0:
+                    raise ValueError("File is empty.")
+        except UnicodeDecodeError as e:
+            raise ValueError(f"File encoding error: {e}.")
+
+        self.logger.info(f"File validation passed: {file_path}.")
+        return True
+
+    def _extract_epub_books(self, epub_list: list[str]) -> str:
         epub_list_sorted = sorted(epub_list, key=self._get_book_number)
         texts = []
         for epub_path in tqdm(iterable=epub_list_sorted):
@@ -108,17 +207,35 @@ class DataPreprocessor:
         return cleaned_text.strip()
 
     def _save_processed_text(self, processed_path: str, title: str, text: str) -> None:
+        self._validate_raw_text(text=text, text_label=f"processed text ({title})")
+
         processed_dir = os.path.join(processed_path, title)
         os.makedirs(name=processed_dir, exist_ok=True)
-        processed_path = f"{processed_dir}/{title}.txt"
-        with open(file=processed_path, mode="w", encoding="utf-8") as f:
-            f.write(text)
+        file_path = os.path.join(processed_dir, f"{title}.txt")
 
-    def _load_text_files(self, text_dictionary: Dict[str, List[str]]) -> Dict[str, str]:
-        return {
-            title: open(file=paths[0], mode="r", encoding="utf-8").read()
-            for title, paths in text_dictionary.items()
-        }
+        try:
+            with open(file=file_path, mode="w", encoding="utf-8") as f:
+                f.write(text)
+            self._validate_saved_file(file_path=file_path)
+            self.logger.info(f"Successfully saved: {file_path}")
+        except Exception as e:
+            self.logger.error(f"Error saving {file_path}: {e}")
+            raise
+
+    def _load_text_files(self, text_dictionary: Dict[str, list[str]]) -> dict[str, str]:
+        result: dict[str, str] = {}
+        for title, paths in text_dictionary.items():
+            try:
+                with open(file=paths[0], mode="r", encoding="utf-8") as f:
+                    text = f.read()
+                self._validate_raw_text(text=text, text_label=f"loaded file ({title})")
+            except FileNotFoundError as e:
+                self.logger.error(f"File not found for {title}: {e}")
+                raise
+            except Exception as e:
+                self.logger.error(f"Error loading {title}: {e}")
+                raise
+        return result
 
     def _train_val_test_split(
         self,
@@ -126,13 +243,14 @@ class DataPreprocessor:
         train_ratio: float,
         val_ratio: float,
         test_ratio: float,
-    ) -> Tuple[str, str, str]:
-        total = train_ratio + val_ratio + test_ratio
-        if not abs(total - 1.0) < 1e-9:
-            raise ValueError(f"Train/val/test ratios must sum to 1. Got: '{total}'.")
+    ) -> tuple[str, str, str]:
+        self._validate_split_ratio(
+            train_ratio=train_ratio, val_ratio=val_ratio, test_ratio=test_ratio
+        )
 
         self.logger.info(
-            f"Performing train/val/test split in the ratio: '{train_ratio}/{val_ratio}/{test_ratio}'."
+            f"Performing train/val/test split in ratio:"
+            f"{train_ratio:.1f%}/{val_ratio:.1f%}/{test_ratio:.1f%}"
         )
 
         train_text, val_text, test_text = [], [], []
@@ -151,53 +269,89 @@ class DataPreprocessor:
             val_text.extend(val_words)
             test_text.extend(test_words)
 
-        self.logger.info("'Train/val/test' split completed.")
-        return (
-            " ".join(train_text),
-            " ".join(val_text),
-            " ".join(test_text),
+        train_str = " ".join(train_text)
+        val_str = " ".join(val_text)
+        test_str = " ".join(test_text)
+
+        self._validate_dataset_splits(
+            train_text=train_str,
+            val_text=val_str,
+            test_text=test_str,
         )
+
+        self.logger.info("'Train/val/test' split completed.")
+        return train_str, val_str, test_str
 
     def _save_dataset_splits(self, path: str, **kwargs: str) -> None:
         self.logger.info(
             f"Saving '{','.join(key.split(sep='_')[0] for key in kwargs)}' at {path}."
         )
+        split_names = [key.split(sep="_")[0] for key in kwargs]
+        self.logger.info(f"Saving '{','.join(split_names)}' at {path}")
+
         for key, value in kwargs.items():
             cleaned_folder_name = key.split(sep="_")[0]
             save_path = os.path.join(path, cleaned_folder_name)
             os.makedirs(name=save_path, exist_ok=True)
             text_path = os.path.join(save_path, cleaned_folder_name + ".txt")
-            with open(file=text_path, mode="w", encoding="utf-8") as f:
-                f.write(value)
-            self.logger.info(f"Successfully saved '{cleaned_folder_name}'.")
+
+            try:
+                self._validate_raw_text(
+                    text=value, text_label=f"{cleaned_folder_name} split"
+                )
+                with open(file=text_path, mode="w", encoding="utf-8") as f:
+                    f.write(value)
+                self._validate_saved_file(file_path=text_path)
+                self.logger.info(f"Suuccessfully saved '{cleaned_folder_name}'")
+            except Exception as e:
+                self.logger.error(f"Error saving {cleaned_folder_name}: {e}")
+                raise
 
     def preprocess_dataset(self):
-        epub_dict = self._list_files_by_extension(
-            path=self.cfg.raw_epub_dir, extension=".epub"
-        )
-        for title, epub_list in epub_dict.items():
-            self.logger.info(f"Cleaning '{title}' books.")
-            raw_text = self._extract_epub_books(epub_list=epub_list)
-            clean_text = self._clean_text(text=raw_text)
-            self._save_processed_text(
-                processed_path=self.cfg.processed_dir,
-                title=title,
-                text=clean_text,
+        try:
+            self.logger.info("Starting dataset preprocessing.")
+
+            epub_dict = self._list_files_by_extension(
+                path=self.cfg.raw_epub_dir,
+                extension=".epub",
             )
-        txt_dict = self._list_files_by_extension(
-            path=self.cfg.processed_dir,
-            extension=".txt",
-        )
-        text_map = self._load_text_files(text_dictionary=txt_dict)
-        train_text, val_text, test_text = self._train_val_test_split(
-            text_map=text_map,
-            train_ratio=self.cfg.train_ratio,
-            val_ratio=self.cfg.val_ratio,
-            test_ratio=self.cfg.test_ratio,
-        )
-        self._save_dataset_splits(
-            path=self.cfg.dataset_dir,
-            train_text=train_text,
-            val_text=val_text,
-            test_text=test_text,
-        )
+
+            if not epub_dict:
+                raise ValueError(f"No EPUB files found in {self.cfg.raw_epub_dir}")
+
+            for title, epub_list in tqdm(epub_dict.items()):
+                self.logger.info(f"Processing '{title}' books ({len(epub_list)} files)")
+                raw_text = self._extract_epub_books(epub_list=epub_list)
+                clean_text = self._clean_text(text=raw_text)
+                self._save_processed_text(
+                    processed_path=self.cfg.processed_dir, title=title, text=clean_text
+                )
+
+                txt_dict = self._list_files_by_extension(
+                    path=self.cfg.processed_dir, extension=".txt"
+                )
+
+                if not txt_dict:
+                    raise ValueError(
+                        f"No processed text files found in {self.cfg.processed_dir}"
+                    )
+
+                text_map = self._load_text_files(text_dictionary=txt_dict)
+                train_text, val_text, test_text = self._train_val_test_split(
+                    text_map=text_map,
+                    train_ratio=self.cfg.train_ratio,
+                    val_ratio=self.cfg.val_ratio,
+                    test_ratio=self.cfg.test_ratio,
+                )
+                self._save_dataset_splits(
+                    path=self.cfg.dataset_dir,
+                    train_text=train_text,
+                    val_text=val_text,
+                    test_text=test_text,
+                )
+
+                self.logger.info("Dataset preprocessing completed successfully.")
+
+        except Exception as e:
+            self.logger.error(f"Preprocessing failed: {e}")
+            raise
