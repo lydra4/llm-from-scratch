@@ -1,4 +1,4 @@
-FROM python:3.12.10-slim-bookworm AS builder
+FROM python:3.14.0-slim-bookworm AS builder
 
 ARG DEBIAN_FRONTEND="noninteractive"
 
@@ -19,7 +19,7 @@ COPY prod-requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r prod-requirements.txt
 
-FROM python:3.12.10-slim-bookworm
+FROM python:3.14.0-slim-bookworm
 
 ARG NON_ROOT_USER="template"
 ARG NON_ROOT_UID="2222"
