@@ -1,7 +1,16 @@
-#!/usr/bin/env bash
 set -e
 
-ENV_NAME="llmfromscratch-gpu"
+if [ ! -f "env-gpu.yaml" ]; then
+    echo "❌ Error: env-gpu.yaml not found in the current directory."
+    exit 1
+fi
+
+ENV_NAME=$(grep -E '^name:' env-gpu.yaml | awk '{print $2}')
+
+if [ -z "$ENV_NAME" ]; then
+    echo "❌ Error: Could not find a name in env-gpu.yaml."
+    exit 1
+fi
 
 OS_TYPE="unknown"
 case "$(uname -s)" in
