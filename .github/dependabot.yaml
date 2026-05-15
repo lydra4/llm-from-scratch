@@ -6,3 +6,15 @@ updates:
       interval: "weekly"
     target-branch: "dev"
     open-pull-requests-limit: 5
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    target-branch: "dev"
+
+  - package-ecosystem: "docker"
+    directory: "/docker"
+    schedule:
+      interval: "weekly"
+    target-branch: "dev"
