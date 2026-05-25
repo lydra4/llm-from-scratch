@@ -226,15 +226,29 @@ class DataPreprocessor:
         result: dict[str, str] = {}
         for title, paths in text_dictionary.items():
             try:
-                with open(file=paths[0], mode="r", encoding="utf-8") as f:
-                    text = f.read()
-                self._validate_raw_text(text=text, text_label=f"loaded file ({title})")
+                if not paths:
+                    raise ValueError(f"No text files found for {title}.")
+
+                texts = []
+                for path in sorted(paths):
+                    with open(file=path, mode="r", encoding="utf-8") as f:
+                        text = f.read()
+
+                    self._validate_raw_text(
+                        text=text,
+                        text_label=f"loaded file ({title}: {path})",
+                    )
+                    texts.append(text)
+
+                result[title] = "\n".join(texts)
+
             except FileNotFoundError as e:
                 self.logger.error(f"File not found for {title}: {e}")
                 raise
             except Exception as e:
                 self.logger.error(f"Error loading {title}: {e}")
                 raise
+
         return result
 
     def _train_val_test_split(
