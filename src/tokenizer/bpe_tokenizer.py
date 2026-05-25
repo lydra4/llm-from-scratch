@@ -208,5 +208,5 @@ class BPETokenizer:
             self._encode_sequential(
                 vocab=vocab,
                 datasets=datasets,
-                path=self.cfg.data_path,
+                path=self.cfg.save_path,
             )
