@@ -4,9 +4,9 @@ import json
 import logging
 import multiprocessing
 import os
+from collections.abc import Iterator
 from os import PathLike
 from pathlib import Path
-from typing import Iterator, Optional
 
 import numpy as np
 from omegaconf import DictConfig
@@ -17,7 +17,7 @@ class BPETokenizer:
     def __init__(
         self,
         cfg: DictConfig,
-        logger: Optional[logging.Logger] = None,
+        logger: logging.Logger | None = None,
     ) -> None:
         self.cfg = cfg
         self.logger = logger or logging.getLogger(__name__)

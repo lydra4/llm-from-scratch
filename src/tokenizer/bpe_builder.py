@@ -2,7 +2,7 @@ import collections
 import json
 import logging
 import os
-from typing import Optional, Sequence, Tuple
+from collections.abc import Sequence
 
 from omegaconf import DictConfig
 from tqdm import tqdm
@@ -12,7 +12,7 @@ class BPEBuilder:
     def __init__(
         self,
         cfg: DictConfig,
-        logger: Optional[logging.Logger] = None,
+        logger: logging.Logger | None = None,
     ) -> None:
         self.cfg = cfg
         self.logger = logger or logging.getLogger(__name__)
@@ -37,7 +37,7 @@ class BPEBuilder:
         self,
         text: str,
         encoding: str = "utf-8",
-    ) -> Tuple[list[bytes], list[int]]:
+    ) -> tuple[list[bytes], list[int]]:
         byte_sequence = text.encode(encoding)
         byte_content = [bytes([byte]) for byte in byte_sequence]
 
@@ -48,7 +48,7 @@ class BPEBuilder:
         self,
         byte_content: list[bytes],
         token_ids: list[int],
-    ) -> Tuple[dict[bytes, int], dict[int, bytes]]:
+    ) -> tuple[dict[bytes, int], dict[int, bytes]]:
         byte_to_token_id = dict(zip(byte_content, token_ids))
         token_id_to_bytes = {v: k for k, v in byte_to_token_id.items()}
 
@@ -58,7 +58,7 @@ class BPEBuilder:
         self,
         token_ids: list[int],
     ) -> dict[
-        Tuple[int, int],
+        tuple[int, int],
         int,
     ]:
         bigram_freq = collections.Counter(
@@ -75,8 +75,8 @@ class BPEBuilder:
         self,
         byte_to_id: dict[bytes, int],
         id_to_bytes: dict[int, bytes],
-        bigram_freq: dict[Tuple[int, int], int],
-    ) -> Tuple[bytes, bytes, bytes]:
+        bigram_freq: dict[tuple[int, int], int],
+    ) -> tuple[bytes, bytes, bytes]:
         new_token_id = max(byte_to_id.values()) + 1
         id1, id2 = max(bigram_freq, key=lambda k: bigram_freq[k])
 
@@ -95,7 +95,7 @@ class BPEBuilder:
         pair: Sequence[bytes],
         new_token: bytes,
         byte_to_token_id: dict[bytes, int],
-    ) -> Tuple[list[bytes], list[int]]:
+    ) -> tuple[list[bytes], list[int]]:
         assert len(pair) == 2, f"Must have only 2 items in pair, got {len(pair)}."
 
         new_byte_content = []

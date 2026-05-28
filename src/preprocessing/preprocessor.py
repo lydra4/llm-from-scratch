@@ -3,7 +3,6 @@ import os
 import re
 import unicodedata
 from os import PathLike
-from typing import Dict, Optional
 
 import ebooklib
 from bs4 import BeautifulSoup
@@ -16,7 +15,7 @@ class DataPreprocessor:
     def __init__(
         self,
         cfg: DictConfig,
-        logger: Optional[logging.Logger] = None,
+        logger: logging.Logger | None = None,
     ) -> None:
         self.trans_table = str.maketrans(
             {
@@ -45,7 +44,7 @@ class DataPreprocessor:
         self,
         path: str,
         extension: str,
-    ) -> Dict[str, list[str]]:
+    ) -> dict[str, list[str]]:
         walks = [
             (os.path.basename(dirpath), dirpath, filenames)
             for dirpath, _, filenames in os.walk(path)
@@ -222,7 +221,7 @@ class DataPreprocessor:
             self.logger.error(f"Error saving {file_path}: {e}")
             raise
 
-    def _load_text_files(self, text_dictionary: Dict[str, list[str]]) -> dict[str, str]:
+    def _load_text_files(self, text_dictionary: dict[str, list[str]]) -> dict[str, str]:
         result: dict[str, str] = {}
         for title, paths in text_dictionary.items():
             try:
@@ -253,7 +252,7 @@ class DataPreprocessor:
 
     def _train_val_test_split(
         self,
-        text_map: Dict[str, str],
+        text_map: dict[str, str],
         train_ratio: float,
         val_ratio: float,
         test_ratio: float,

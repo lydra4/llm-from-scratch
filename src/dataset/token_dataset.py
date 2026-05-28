@@ -1,6 +1,5 @@
 import logging
 import os
-from typing import Optional
 
 import numpy as np
 import torch
@@ -12,7 +11,7 @@ class TokenDataset(Dataset):
         self,
         data_path: str,
         context_window: int,
-        logger: Optional[logging.Logger],
+        logger: logging.Logger | None = None,
     ) -> None:
         self.data_path = data_path
         self.context_window = context_window

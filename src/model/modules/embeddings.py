@@ -1,6 +1,5 @@
 import logging
 import math
-from typing import Optional
 
 import torch
 from omegaconf import DictConfig
@@ -11,7 +10,7 @@ class TransformerEmbeddings(nn.Module):
     def __init__(
         self,
         cfg: DictConfig,
-        logger: Optional[logging.Logger],
+        logger: logging.Logger | None = None,
     ) -> None:
         super().__init__()
         self.cfg = cfg

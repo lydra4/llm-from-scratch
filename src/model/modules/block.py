@@ -1,6 +1,6 @@
 import torch
-import torch.nn as nn
 from omegaconf import DictConfig
+from torch import nn
 
 from model.mlp import FeedForward
 from model.modules.attention import CausalSelfAttention

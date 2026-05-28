@@ -1,6 +1,6 @@
 import torch
-import torch.nn as nn
 from omegaconf import DictConfig
+from torch import nn
 
 
 class FeedForward(nn.Module):
