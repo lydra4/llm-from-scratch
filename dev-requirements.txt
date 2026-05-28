@@ -1,12 +1,12 @@
 # ML and Computing
-numpy==2.4.4
+numpy==2.4.6
 
 # Code Formatting and Linting
-black==25.11.0
-mypy==1.19.0
-ruff==0.14.8
-pylint==4.0.4
+black==26.5.1
+mypy==2.1.0
+ruff==0.15.14
+pylint==4.0.5
 
 # Pre-commit Hooks
-pre-commit==4.5.0
-types-PyYAML==6.0.12.20250915
+pre-commit==4.6.0
+types-PyYAML==6.0.12.20260518
