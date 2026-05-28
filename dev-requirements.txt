@@ -10,3 +10,6 @@ pylint==4.0.5
 # Pre-commit Hooks
 pre-commit==4.6.0
 types-PyYAML==6.0.12.20260518
+
+# Monitering
+mlflow==3.12.0
