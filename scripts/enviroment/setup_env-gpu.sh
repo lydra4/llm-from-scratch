@@ -1,15 +1,21 @@
 set -e
 
-eval "$(mamba shell hook --shell bash)"
+eval "$(conda shell.bash hook)"
 
-echo "🚀 Creating environment from env-gpu.yaml ..."
+if ! command -v mamba &> /dev/null; then
+    echo "⚡ Installing mamba into base environment..."
+    conda install -n base -c conda-forge mamba -y
+fi
+
+echo "🚀 Creating environment from env-gpu.yaml using mamba..."
 mamba env create -f env-gpu.yaml -y
 echo "✅ Environment created."
 
+# Extract env name from env-gpu.yaml
 ENV_NAME=$(grep -E '^name:' env-gpu.yaml | awk '{print $2}')
 
 echo "🔧 Activating environment: $ENV_NAME ..."
-mamba activate "$ENV_NAME"
+conda activate "$ENV_NAME"
 
 echo "🛠️ Setting up pre-commit..."
 pre-commit install
