@@ -45,20 +45,23 @@ class DataPreprocessor:
         path: str,
         extension: str,
     ) -> dict[str, list[str]]:
-        walks = [
-            (os.path.basename(dirpath), dirpath, filenames)
-            for dirpath, _, filenames in os.walk(path)
-        ]
+        if not os.path.exists(path=path):
+            raise FileNotFoundError(f"Directory does not exist: {path}")
 
-        return {
-            folder: [
-                os.path.join(dirpath, file)
-                for file in filenames
-                if file.endswith(extension)
+        result = {}
+
+        for dirpath, _, filenames in os.walk(path):
+            folder = os.path.basename(dirpath)
+            matching_files = [
+                os.path.join(dirpath, filename)
+                for filename in filenames
+                if filename.lower().endswith(extension.lower())
             ]
-            for folder, dirpath, filenames in walks
-            if folder != ""
-        }
+
+            if matching_files:
+                result[folder] = sorted(matching_files)
+
+        return result
 
     def _get_book_number(self, filename: str) -> int:
         match = re.search(r"(\d+)(?=\.epub$)", filename)
@@ -119,12 +122,6 @@ class DataPreprocessor:
             if not abs(total - 1.0) < 1e-9:
                 raise ValueError(f"Ratios must sum to 1.0, got {total}.")
 
-            min_ratio = min(train_ratio, val_ratio, test_ratio)
-            if min_ratio < 0.1:
-                self.logger.warning(
-                    f"Imbalanced split detected: min ratio = {min_ratio}."
-                )
-
     def _validate_dataset_splits(
         self,
         train_text: str,
@@ -146,7 +143,7 @@ class DataPreprocessor:
         total_words = sum(stats.values())
         for split_name, count in stats.items():
             ratio = count / total_words
-            self.logger.info(f"{split_name} ratio: {ratio:.1f%}")
+            self.logger.info(f"{split_name} ratio: {ratio:.1%}")
 
         return stats
 
@@ -168,19 +165,33 @@ class DataPreprocessor:
     def _extract_epub_books(self, epub_list: list[str]) -> str:
         epub_list_sorted = sorted(epub_list, key=self._get_book_number)
         texts = []
+
         for epub_path in tqdm(iterable=epub_list_sorted):
+            self._validate_epub(epub_path=epub_path)
+
             book = epub.read_epub(name=epub_path)
             for idref, _ in book.spine:
                 item = book.get_item_with_id(uid=idref)
-                if (
-                    item is not None
-                    and item.get_type() == ebooklib.ITEM_DOCUMENT
-                    and item.get_name() not in self.cfg.exclude_files
-                ):
-                    soup = BeautifulSoup(item.get_body_content(), "html.parser")
-                    texts.append(soup.get_text("\n"))
 
-        return "\n".join(texts)
+                if item is None:
+                    continue
+
+                if item.get_type() != ebooklib.ITEM_DOCUMENT:
+                    continue
+
+                if item.get_name() in self.cfg.exclude_files:
+                    continue
+
+                soup = BeautifulSoup(item.get_body_content(), "html.parser")
+                chapter_text = soup.get_text("\n").strip()
+
+                if chapter_text:
+                    texts.append(chapter_text)
+
+        extracted_text = "\n".join(texts)
+        self._validate_raw_text(text=extracted_text, text_label="extracted EPUB text")
+
+        return extracted_text
 
     def _clean_text(self, text: str) -> str:
         cleaned_text = unicodedata.normalize("NFKC", text).translate(self.trans_table)
@@ -263,7 +274,7 @@ class DataPreprocessor:
 
         self.logger.info(
             f"Performing train/val/test split in ratio:"
-            f"{train_ratio:.1f%}/{val_ratio:.1f%}/{test_ratio:.1f%}"
+            f"{train_ratio:.1%}/{val_ratio:.1%}/{test_ratio:.1%}"
         )
 
         train_text, val_text, test_text = [], [], []
@@ -334,14 +345,19 @@ class DataPreprocessor:
 
             for title, epub_list in tqdm(epub_dict.items()):
                 self.logger.info(f"Processing '{title}' books ({len(epub_list)} files)")
+
                 raw_text = self._extract_epub_books(epub_list=epub_list)
                 clean_text = self._clean_text(text=raw_text)
+
                 self._save_processed_text(
-                    processed_path=self.cfg.processed_dir, title=title, text=clean_text
+                    processed_path=self.cfg.processed_dir,
+                    title=title,
+                    text=clean_text,
                 )
 
                 txt_dict = self._list_files_by_extension(
-                    path=self.cfg.processed_dir, extension=".txt"
+                    path=self.cfg.processed_dir,
+                    extension=".txt",
                 )
 
                 if not txt_dict:
