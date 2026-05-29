@@ -24,3 +24,8 @@ val:
 model:
   epochs: 100
   vocab_size: ${bpe_tokenizer.vocab_size}
+
+mlflow:
+  tracking_uri: file:./mlruns
+  experiment_name: llm-from-scratch
+  log_model: true
