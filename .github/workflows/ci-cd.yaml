@@ -31,7 +31,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r dev-requirements.txt
+          pip install -r dev-requirements.txt -r prod-requirements.txt
           pip install bandit safety
 
       - name: Cache pre-commit
