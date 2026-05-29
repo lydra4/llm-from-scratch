@@ -3,7 +3,7 @@ import logging
 import hydra
 from omegaconf import DictConfig
 
-from src.tokenizer.bpe_tokenizer import BPETokenizer
+from tokenizer.bpe_tokenizer import BPETokenizer
 from utils.general_utils import setup_logging
 
 
