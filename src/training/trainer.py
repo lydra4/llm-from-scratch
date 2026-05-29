@@ -67,7 +67,7 @@ def train_epoch(
 
                 torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
 
-                for name, param in model.parameters():
+                for name, param in model.named_parameters():
                     if param.grad is not None:
                         if torch.isnan(param.grad).any():
                             raise RuntimeError(f"NaN gradient in {name}")
@@ -165,7 +165,11 @@ def validate_epoch(
                     logger.error(f"Error in validation batch: {e}")
                     continue
 
-            avg_val_loss = total_val_loss / len(val_loader)
+            if num_batches == 0:
+                logger.warning("No validation batches, returning inf")
+                avg_val_loss = float("inf")
+            else:
+                avg_val_loss = total_val_loss / num_batches
 
             if math.isnan(avg_val_loss):
                 logger.warning("Average validation loss is NaN, returning inf")
