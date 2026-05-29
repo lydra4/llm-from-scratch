@@ -1,10 +1,12 @@
 import ast
 import concurrent.futures
+import io
 import itertools
 import json
 import logging
 import multiprocessing
 import os
+import tokenize
 from collections.abc import Iterator
 from os import PathLike
 from pathlib import Path
@@ -32,6 +34,20 @@ class BPETokenizer:
         byte_sequence = b"".join([inverse_vocab.get(idx, b"") for idx in token_ids])
         return byte_sequence.decode(encoding=encoding, errors="replace")
 
+    def _parse_merge_pairs(self, raw_pair: str) -> tuple[str, str]:
+        string_tokens = []
+
+        for token in tokenize.generate_tokens(io.StringIO(raw_pair).readline):
+            if token.type == tokenize.STRING:
+                string_tokens.append(token.string)
+
+        if len(string_tokens) != 2:
+            raise ValueError(
+                f"Expected merge pair to contain 2 bytes literals, got {len(string_tokens)}: {raw_pair!r}"
+            )
+
+        return string_tokens[0], string_tokens[1]
+
     def _parse_merges_json(
         self,
         merges_path: str | PathLike,
@@ -43,7 +59,7 @@ class BPETokenizer:
 
         merges = {}
         for raw_pair, rank in raw_merges.items():
-            left, right = raw_pair.split(" ", maxsplit=1)
+            left, right = self._parse_merge_pairs(raw_pair=raw_pair)
             merges[(ast.literal_eval(left), ast.literal_eval(right))] = int(rank)
 
         return merges
