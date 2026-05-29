@@ -29,6 +29,13 @@ model:
   n_heads: 4
   dropout: 0.1
 
+checkpoint:
+  enabled: true
+  dir: checkpoints
+  checkpoint_interval: 5
+  save_best: true
+  resume_path: null
+
 mlflow:
   tracking_uri: file:./mlruns
   experiment_name: llm-from-scratch

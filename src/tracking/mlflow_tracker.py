@@ -59,5 +59,12 @@ def log_epoch_metrics(
     mlflow.log_metrics(metrics=metrics, step=epoch)
 
 
-def log_model(model: Module) -> None:
-    mlflow_pytorch.log_model(model, name="model")
+def log_model(cfg: DictConfig, model: Module, epoch: int) -> None:
+    should_log_model = (
+        cfg.mlflow.log_model
+        and cfg.mlflow.checkpoint_interval > 0
+        and (epoch + 1) % cfg.mlflow.checkpoint_interval == 0
+    )
+
+    if should_log_model:
+        mlflow_pytorch.log_model(model, name="model")
