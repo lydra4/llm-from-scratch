@@ -3,3 +3,5 @@ data_path: "./data/03-datasets"
 save_path: "./data/05-pretokenized"
 text_files: ".txt"
 use_multiprocessing: True
+merges_path: "./data/04-tokens/merges.json"
+token_dtype: "int32"

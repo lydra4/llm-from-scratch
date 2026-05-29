@@ -2,3 +2,4 @@ data_path: "./data/03-datasets"
 character_encoding: "utf-8"
 vocab_size: 5_000
 dict_save_path: "./data/04-tokens/vocab.json"
+merges_save_path: "./data/04-tokens/merges.json"

@@ -1,5 +1,6 @@
 import ast
 import concurrent.futures
+import itertools
 import json
 import logging
 import multiprocessing
@@ -31,6 +32,22 @@ class BPETokenizer:
         byte_sequence = b"".join([inverse_vocab.get(idx, b"") for idx in token_ids])
         return byte_sequence.decode(encoding=encoding, errors="replace")
 
+    def _parse_merges_json(
+        self,
+        merges_path: str | PathLike,
+        mode: str = "r",
+        encoding: str = "utf-8",
+    ) -> dict[tuple[bytes, bytes], int]:
+        with open(file=merges_path, mode=mode, encoding=encoding) as f:
+            raw_merges = json.load(f)
+
+        merges = {}
+        for raw_pair, rank in raw_merges.items():
+            left, right = raw_pair.split(" ", maxsplit=1)
+            merges[(ast.literal_eval(left), ast.literal_eval(right))] = int(rank)
+
+        return merges
+
     def _parse_vocab_json(
         self,
         vocab_path: str | PathLike,
@@ -44,7 +61,18 @@ class BPETokenizer:
         ) as f:
             raw_vocab = json.load(f)
 
-        return {ast.literal_eval(k): int(v) for k, v in raw_vocab.items()}
+        vocab = {}
+        for raw_token, raw_token_id in raw_vocab.items():
+            token = ast.literal_eval(raw_token)
+
+            if not isinstance(token, bytes):
+                raise TypeError(
+                    f"Expected vobab key to decode to bytes, got {type(token)}"
+                )
+
+            vocab[token] = int(raw_token_id)
+
+        return vocab
 
     def _yield_dataset_paths(
         self,
@@ -68,9 +96,12 @@ class BPETokenizer:
     ) -> None:
         self.logger.info(f"Preparing to save '{filename}' tokens")
 
-        tokens_array = np.array(object=tokens_ids, dtype=np.int16)
+        dtype = np.dtype(self.cfg.get("token_dtype", "int32"))
+        tokens_array = np.array(object=tokens_ids, dtype=dtype)
+
         save_path = os.path.join(path, filename)
         os.makedirs(name=save_path, exist_ok=True)
+
         full_filepath = os.path.join(save_path, f"{filename}.npy")
         np.save(file=full_filepath, arr=tokens_array)
 
@@ -80,12 +111,12 @@ class BPETokenizer:
     def _encode(
         text: str,
         vocab: dict[bytes, int],
+        merges: dict[tuple[bytes, bytes], int],
         encoding: str = "utf-8",
         disable_pbar: bool = False,
         pbar_desc: str = "BPE Merges",
     ) -> list[int]:
-        text_bytes = text.encode(encoding=encoding)
-        tokens = [bytes([b]) for b in text_bytes]
+        tokens = [bytes([b]) for b in text.encode(encoding=encoding)]
 
         identity = multiprocessing.current_process()._identity
         pos = identity[0] if identity else 1
@@ -98,17 +129,19 @@ class BPETokenizer:
             position=pos,
         ) as pbar:
             while len(tokens) >= 2:
-                pairs = zip(tokens, tokens[1:])
+                pairs = itertools.pairwise(tokens)
+
                 best_pair = min(
                     pairs,
-                    key=lambda p: vocab.get(p[0] + p[1], float("inf")),
+                    key=lambda pair: merges.get(pair, float("inf")),
                 )
-                merged_best = best_pair[0] + best_pair[1]
 
-                if merged_best not in vocab:
+                if best_pair not in merges:
                     break
 
+                merged_best = best_pair[0] + best_pair[1]
                 new_tokens = []
+
                 i = 0
                 while i < len(tokens):
                     if (
@@ -131,6 +164,7 @@ class BPETokenizer:
     def _encode_parallel(
         self,
         vocab: dict[bytes, int],
+        merges: dict[tuple[bytes, bytes], int],
         datasets: list[tuple[str, str]],
         path: str,
     ) -> None:
@@ -142,6 +176,7 @@ class BPETokenizer:
                     self._encode,
                     text=text_content,
                     vocab=vocab,
+                    merges=merges,
                     disable_pbar=False,
                     pbar_desc=f"Worker | {split_name}",
                 ): split_name
@@ -169,6 +204,7 @@ class BPETokenizer:
     def _encode_sequential(
         self,
         vocab: dict[bytes, int],
+        merges: dict[tuple[bytes, bytes], int],
         datasets: list[tuple[str, str]],
         path: str,
     ) -> None:
@@ -184,6 +220,7 @@ class BPETokenizer:
             token_ids = self._encode(
                 text=text_content,
                 vocab=vocab,
+                merges=merges,
                 disable_pbar=False,
                 pbar_desc=f"Merges | {split_name}",
             )
@@ -195,11 +232,13 @@ class BPETokenizer:
 
     def encode_all_text(self) -> None:
         vocab = self._parse_vocab_json(vocab_path=self.cfg.vocab_path)
+        merges = self._parse_merges_json(merges_path=self.cfg.merges_path)
         datasets = list(self._yield_dataset_paths(data_path=self.cfg.data_path))
 
         if self.cfg.use_multiprocessing:
             self._encode_parallel(
                 vocab=vocab,
+                merges=merges,
                 datasets=datasets,
                 path=self.cfg.save_path,
             )
@@ -207,6 +246,7 @@ class BPETokenizer:
         else:
             self._encode_sequential(
                 vocab=vocab,
+                merges=merges,
                 datasets=datasets,
                 path=self.cfg.save_path,
             )

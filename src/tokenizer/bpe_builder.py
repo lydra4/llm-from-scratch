@@ -17,6 +17,18 @@ class BPEBuilder:
         self.cfg = cfg
         self.logger = logger or logging.getLogger(__name__)
 
+    def _save_json(self, dict_to_save: dict, path: str | os.PathLike) -> None:
+        folder = os.path.dirname(path)
+        os.makedirs(name=folder, exist_ok=True)
+
+        with open(file=path, mode="w", encoding="utf-8") as file:
+            json.dump(
+                dict_to_save,
+                file,
+                indent=4,
+                ensure_ascii=False,
+            )
+
     def _load_training_text(
         self,
         data_path: str,
@@ -126,31 +138,46 @@ class BPEBuilder:
             json.dump(json_ready_dict, file, indent=4, ensure_ascii=False)
 
     def build_vocabulary(self) -> None:
-        self.logger.info("Tokenizing Text")
+        self.logger.info("Building BPE Vocabulary")
+
         train_text = self._load_training_text(data_path=self.cfg.data_path)
         byte_content, token_ids = self._convert_text_to_bytes(text=train_text)
 
         byte_to_token_id, token_id_to_bytes = self._init_vocab(
-            byte_content=byte_content, token_ids=token_ids
+            byte_content=byte_content,
+            token_ids=token_ids,
         )
+
+        merges: dict[str, int] = {}
         num_merges_to_do = self.cfg.vocab_size - len(byte_to_token_id)
 
         with tqdm(total=num_merges_to_do, desc="Performing BPE merges") as pbar:
             while len(byte_to_token_id) < self.cfg.vocab_size:
                 bigram_freq = self._count_bigram_frequencies(token_ids=token_ids)
-                *pair, new_token = self._add_top_pair_to_vocab(
+
+                if not bigram_freq:
+                    break
+
+                byte_1, byte_2, merged_token = self._add_top_pair_to_vocab(
                     byte_to_id=byte_to_token_id,
                     id_to_bytes=token_id_to_bytes,
                     bigram_freq=bigram_freq,
                 )
+
+                merges[f"{byte_1!r} {byte_2!r}"] = len(merges)
+
                 byte_content, token_ids = self._replace_pair(
                     byte_content=byte_content,
-                    pair=pair,
-                    new_token=new_token,
+                    pair=(byte_1, byte_2),
+                    new_token=merged_token,
                     byte_to_token_id=byte_to_token_id,
                 )
                 pbar.update(1)
 
-        self._save_vocabulary(
-            dict_to_save=byte_to_token_id, path=self.cfg.dict_save_path
-        )
+        vocab_json = {
+            repr(token_bytes): token_id
+            for token_bytes, token_id in byte_to_token_id.items()
+        }
+
+        self._save_json(dict_to_save=vocab_json, path=self.cfg.dict_save_path)
+        self._save_json(dict_to_save=merges, path=self.cfg.merges_save_path)
