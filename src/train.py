@@ -63,7 +63,13 @@ def main(cfg: DictConfig):
                 epoch=epoch,
             )
 
-            if cfg.mlflow.log_model:
+            should_log_model = (
+                cfg.mlflow.log_model
+                and cfg.mlflow.checkpoint_interval > 0
+                and (epoch + 1) % cfg.mlflow.log_model_every_n_epochs == 0
+            )
+
+            if should_log_model:
                 log_model(model=model)
 
 
