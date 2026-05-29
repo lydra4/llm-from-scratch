@@ -16,15 +16,13 @@ class TransformerEmbeddings(nn.Module):
         self.cfg = cfg
         self.logger = logger or logging.getLogger(__name__)
 
-        self.d_model = self.cfg.model.d_model
-
         self.token_embeddings = nn.Embedding(
             num_embeddings=self.cfg.model.vocab_size,
             embedding_dim=self.cfg.model.d_model,
         )
         pe = self._build_positional_embeddings(
-            context_window=self.cfg.context_window,
-            d_model=self.cfg.d_model,
+            context_window=self.cfg.dataset.context_window,
+            d_model=self.cfg.model.d_model,
         )
         self.register_buffer(name="pe", tensor=pe)
 

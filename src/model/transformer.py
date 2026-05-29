@@ -1,11 +1,11 @@
 import logging
 
 import torch
-from modules.embeddings import TransformerEmbeddings
 from omegaconf import DictConfig
 from torch import nn
 
 from model.modules.block import TransformerBlock
+from model.modules.embeddings import TransformerEmbeddings
 
 
 class TransformerLM(nn.Module):
@@ -15,16 +15,16 @@ class TransformerLM(nn.Module):
         self.logger = logger or logging.getLogger(__name__)
 
         self.embeddings = TransformerEmbeddings(cfg=self.cfg, logger=self.logger)
-        self.attention_ln = nn.LayerNorm(normalized_shape=self.cfg.d_model)
+        self.attention_ln = nn.LayerNorm(normalized_shape=self.cfg.model.d_model)
 
         self.blocks = nn.ModuleList(
-            [TransformerBlock(cfg=self.cfg) for _ in range(self.n_layers)]
+            [TransformerBlock(cfg=self.cfg) for _ in range(self.cfg.model.n_layers)]
         )
 
-        self.ln_f = nn.LayerNorm(normalized_shape=self.cfg.d_model)
+        self.ln_f = nn.LayerNorm(normalized_shape=self.cfg.model.d_model)
         self.lm_head = nn.Linear(
-            in_features=self.d_model,
-            out_features=self.vocab_size,
+            in_features=self.cfg.model.d_model,
+            out_features=self.cfg.model.vocab_size,
             bias=False,
         )
 

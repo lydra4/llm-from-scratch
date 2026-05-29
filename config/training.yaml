@@ -24,8 +24,13 @@ val:
 model:
   epochs: 100
   vocab_size: ${bpe_tokenizer.vocab_size}
+  d_model: 256
+  n_layers: 4
+  n_heads: 4
+  dropout: 0.1
 
 mlflow:
   tracking_uri: file:./mlruns
   experiment_name: llm-from-scratch
   log_model: true
+  checkpoint_interval: 5
