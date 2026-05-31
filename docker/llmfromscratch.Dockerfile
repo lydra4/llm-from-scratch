@@ -18,13 +18,13 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 COPY prod-requirements.txt .
 
-RUN pip install --no-cache-dir --upgrade pip && \
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r prod-requirements.txt
 
 RUN if [ "$TARGET" = "gpu" ]; then \
-    pip install --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cu124; \
+    pip install --no-cache-dir torch==2.6.0 --index-url https://download.pytorch.org/whl/cu124; \
     else \
-    pip install --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu; \
+    pip install --no-cache-dir torch==2.6.0 --index-url https://download.pytorch.org/whl/cpu; \
     fi
 
 FROM python:3.12.10-slim-bookworm
