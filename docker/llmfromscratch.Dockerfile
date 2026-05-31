@@ -4,6 +4,7 @@ ARG DEBIAN_FRONTEND="noninteractive"
 ARG TARGET=cpu
 
 RUN apt-get update && \
+    apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
     build-essential \
     libxml2-dev \
@@ -36,6 +37,7 @@ ARG HOME_DIR="/home/${NON_ROOT_USER}"
 ARG REPO_DIR="."
 
 RUN apt-get update && \
+    apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
     libgomp1 \
     ca-certificates \
