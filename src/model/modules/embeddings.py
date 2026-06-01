@@ -24,7 +24,10 @@ class TransformerEmbeddings(nn.Module):
             context_window=self.cfg.dataset.context_window,
             d_model=self.cfg.model.d_model,
         )
+        self.pe: torch.Tensor
         self.register_buffer(name="pe", tensor=pe)
+
+        self.dropout = nn.Dropout(p=self.cfg.model.dropout)
 
     def _build_positional_embeddings(
         self,
@@ -53,6 +56,6 @@ class TransformerEmbeddings(nn.Module):
         _, t = idx.size()
 
         token_embeddings = self.token_embeddings(idx)
-        positional_embeddings = self.pe[:t, :]
+        positional_embeddings = self.pe[:t, :].unsqueeze(0)
 
-        return token_embeddings + positional_embeddings
+        return self.dropout(token_embeddings + positional_embeddings)
