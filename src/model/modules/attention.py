@@ -5,6 +5,8 @@ import torch.nn.functional as F
 from omegaconf import DictConfig
 from torch import nn
 
+from model.modules.layers import GPTLinear
+
 
 class CausalSelfAttention(nn.Module):
     def __init__(
@@ -22,17 +24,21 @@ class CausalSelfAttention(nn.Module):
 
         assert self.d_model % self.n_heads == 0, "d_model must be divisible by n_heads"
 
-        self.dropout = self.cfg.model.get("dropout", 0.1)
-        self.c_attn = nn.Linear(
+        dropout = self.cfg.model.get("dropout", 0.1)
+        bias = self.cfg.model.get("bias", True)
+
+        self.c_attn = GPTLinear(
             in_features=self.d_model,
             out_features=(3 * self.d_model),
-            bias=False,
+            bias=bias,
         )
-        self.c_proj = nn.Linear(
+        self.c_proj = GPTLinear(
             in_features=self.d_model,
             out_features=self.d_model,
-            bias=False,
+            bias=bias,
+            scale_init=True,
         )
+        self.resid_dropout = nn.Dropout(p=dropout)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         b, t, c = x.size()
@@ -49,9 +55,10 @@ class CausalSelfAttention(nn.Module):
             key=k,
             value=v,
             is_causal=True,
-            dropout_p=self.dropout if self.training else 0.0,
+            dropout_p=self.cfg.model.dropout if self.training else 0.0,
         )
 
         y = y.transpose(1, 2).contiguous().view(b, t, c)
+        y = self.c_proj(y)
 
-        return self.c_proj(y)
+        return self.resid_dropout(y)
