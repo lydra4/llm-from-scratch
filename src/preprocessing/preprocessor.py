@@ -355,31 +355,32 @@ class DataPreprocessor:
                     text=clean_text,
                 )
 
-                txt_dict = self._list_files_by_extension(
-                    path=self.cfg.processed_dir,
-                    extension=".txt",
+            txt_dict = self._list_files_by_extension(
+                path=self.cfg.processed_dir,
+                extension=".txt",
+            )
+
+            if not txt_dict:
+                raise ValueError(
+                    f"No processed text files found in {self.cfg.processed_dir}"
                 )
 
-                if not txt_dict:
-                    raise ValueError(
-                        f"No processed text files found in {self.cfg.processed_dir}"
-                    )
+            text_map = self._load_text_files(text_dictionary=txt_dict)
 
-                text_map = self._load_text_files(text_dictionary=txt_dict)
-                train_text, val_text, test_text = self._train_val_test_split(
-                    text_map=text_map,
-                    train_ratio=self.cfg.train_ratio,
-                    val_ratio=self.cfg.val_ratio,
-                    test_ratio=self.cfg.test_ratio,
-                )
-                self._save_dataset_splits(
-                    path=self.cfg.dataset_dir,
-                    train_text=train_text,
-                    val_text=val_text,
-                    test_text=test_text,
-                )
+            train_text, val_text, test_text = self._train_val_test_split(
+                text_map=text_map,
+                train_ratio=self.cfg.train_ratio,
+                val_ratio=self.cfg.val_ratio,
+                test_ratio=self.cfg.test_ratio,
+            )
+            self._save_dataset_splits(
+                path=self.cfg.dataset_dir,
+                train_text=train_text,
+                val_text=val_text,
+                test_text=test_text,
+            )
 
-                self.logger.info("Dataset preprocessing completed successfully.")
+            self.logger.info("Dataset preprocessing completed successfully.")
 
         except Exception as e:
             self.logger.error(f"Preprocessing failed: {e}")
