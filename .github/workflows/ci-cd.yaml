@@ -52,7 +52,7 @@ jobs:
 
       - name: Check dependencies for Known Vulnerabilities (Safety)
         run: |
-          safety check || true
+          safety scan || true
         continue-on-error: true
 
   build-test-push:
