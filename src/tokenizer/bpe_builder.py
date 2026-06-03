@@ -56,13 +56,9 @@ class BPEBuilder:
         token_ids = list(byte_sequence)
         return byte_content, token_ids
 
-    def _init_vocab(
-        self,
-        byte_content: list[bytes],
-        token_ids: list[int],
-    ) -> tuple[dict[bytes, int], dict[int, bytes]]:
-        byte_to_token_id = dict(zip(byte_content, token_ids))
-        token_id_to_bytes = {v: k for k, v in byte_to_token_id.items()}
+    def _init_vocab(self) -> tuple[dict[bytes, int], dict[int, bytes]]:
+        byte_to_token_id = {bytes([i]): i for i in range(256)}
+        token_id_to_bytes = {i: bytes([i]) for i in range(256)}
 
         return byte_to_token_id, token_id_to_bytes
 
@@ -143,10 +139,7 @@ class BPEBuilder:
         train_text = self._load_training_text(data_path=self.cfg.data_path)
         byte_content, token_ids = self._convert_text_to_bytes(text=train_text)
 
-        byte_to_token_id, token_id_to_bytes = self._init_vocab(
-            byte_content=byte_content,
-            token_ids=token_ids,
-        )
+        byte_to_token_id, token_id_to_bytes = self._init_vocab()
 
         merges: dict[str, int] = {}
         num_merges_to_do = self.cfg.vocab_size - len(byte_to_token_id)
