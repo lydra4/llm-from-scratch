@@ -31,8 +31,12 @@ class BPETokenizer:
         inverse_vocab: dict[int, bytes],
         encoding: str = "utf-8",
     ) -> str:
-        byte_sequence = b"".join([inverse_vocab.get(idx, b"") for idx in token_ids])
-        return byte_sequence.decode(encoding=encoding, errors="replace")
+        missing_ids = [idx for idx in token_ids if idx not in inverse_vocab]
+        if missing_ids:
+            raise KeyError(f"Token ids missing from inverse vocab: {missing_ids[:10]}")
+
+        byte_sequence = b"".join([inverse_vocab[idx] for idx in token_ids])
+        return byte_sequence.decode(encoding=encoding)
 
     def _parse_merge_pairs(self, raw_pair: str) -> tuple[str, str]:
         string_tokens = []
@@ -63,6 +67,28 @@ class BPETokenizer:
             merges[(ast.literal_eval(left), ast.literal_eval(right))] = int(rank)
 
         return merges
+
+    def _validate_merges(
+        self,
+        merges: dict[tuple[bytes, bytes], int],
+        vocab: dict[bytes, int],
+    ) -> None:
+        ranks = list(merges.values())
+
+        if len(ranks) != len(set(ranks)):
+            raise ValueError("Duplicate BPE merge ranks found.")
+
+        expected_ranks = set(range(len(ranks)))
+        actual_ranks = set(ranks)
+        if actual_ranks != expected_ranks:
+            raise ValueError(
+                f"BPE merge ranks must be contiguous from 0 to {len(ranks) - 1}."
+            )
+
+        for left, right in merges:
+            merged = left + right
+            if merged not in vocab:
+                raise ValueError(f"Merged token {merged!r} is missing from vocab.")
 
     def _parse_vocab_json(
         self,
@@ -175,7 +201,11 @@ class BPETokenizer:
                 pbar.update(tokens_removed)
                 tokens = new_tokens
 
-        return [vocab[t] for t in tokens if t in vocab]
+        missing_tokens = [token for token in tokens if token not in vocab]
+        if missing_tokens:
+            raise KeyError(f"Encoded tokens missing from vocab: {missing_tokens[:10]}")
+
+        return [vocab[token] for token in tokens]
 
     def _encode_parallel(
         self,
@@ -216,6 +246,7 @@ class BPETokenizer:
                     )
                 except Exception as e:
                     self.logger.error(f"Error encoding {split_name}:{e}.")
+                    raise RuntimeError(f"Failed to encode split: {split_name}") from e
 
     def _encode_sequential(
         self,
@@ -249,6 +280,8 @@ class BPETokenizer:
     def encode_all_text(self) -> None:
         vocab = self._parse_vocab_json(vocab_path=self.cfg.vocab_path)
         merges = self._parse_merges_json(merges_path=self.cfg.merges_path)
+        self._validate_merges(merges=merges, vocab=vocab)
+
         datasets = list(self._yield_dataset_paths(data_path=self.cfg.data_path))
 
         if self.cfg.use_multiprocessing:
