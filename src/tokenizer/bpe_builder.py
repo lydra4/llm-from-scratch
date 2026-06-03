@@ -56,9 +56,12 @@ class BPEBuilder:
         token_ids = list(byte_sequence)
         return byte_content, token_ids
 
-    def _init_vocab(self) -> tuple[dict[bytes, int], dict[int, bytes]]:
-        byte_to_token_id = {bytes([i]): i for i in range(256)}
-        token_id_to_bytes = {i: bytes([i]) for i in range(256)}
+    def _init_vocab(
+        self,
+        base_vocab_size: int = 256,
+    ) -> tuple[dict[bytes, int], dict[int, bytes]]:
+        byte_to_token_id = {bytes([i]): i for i in range(base_vocab_size)}
+        token_id_to_bytes = {i: bytes([i]) for i in range(base_vocab_size)}
 
         return byte_to_token_id, token_id_to_bytes
 
