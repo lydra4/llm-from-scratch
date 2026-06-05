@@ -11,3 +11,6 @@ omegaconf==2.3.0
 python-dotenv==1.2.2
 python-json-logger==4.1.0
 rich==15.0.0
+
+# ML and Computing
+numpy==2.4.6
