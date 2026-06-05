@@ -37,6 +37,7 @@ checkpoint:
   dir: checkpoints
   checkpoint_interval: 5
   save_best: true
+  save_latest: true
   resume_path: null
 
 mlflow:
