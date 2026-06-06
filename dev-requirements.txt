@@ -1,5 +1,5 @@
-# ML and Computing
-numpy==2.4.6
+# Testing
+pytest==9.0.3
 
 # Code Formatting and Linting
 black==26.5.1
