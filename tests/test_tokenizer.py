@@ -71,7 +71,7 @@ def test_parse_merges_json_loads_byte_pairs(
     logger: logging.Logger,
 ) -> None:
     merges_path = tmp_path / "merges.json"
-    merges_path.write_text(json.dumps({"b'a b'b": 0}), encoding="utf-8")
+    merges_path.write_text(json.dumps({"b'a' b'b'": 0}), encoding="utf-8")
 
     tokenizer = BPETokenizer(cfg=OmegaConf.create({}), logger=logger)
 
