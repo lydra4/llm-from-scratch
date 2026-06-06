@@ -48,7 +48,7 @@ def test_token_dataset_rejects_too_short_data(
         arr=np.array([1, 2, 3, 4], dtype=np.int64),
     )
 
-    with pytest.raises(ValueError, match="must be > context_window"):
+    with pytest.raises(ValueError, match="Invalid numpy file"):
         TokenDataset(data_path=str(path), context_window=4, logger=logger)
 
 
@@ -59,7 +59,7 @@ def test_token_dataset_rejects_non_integer_data(
     path = tmp_path / "floats.npy"
     np.save(file=path, arr=np.array([1.0, 2.0, 3.0, 4.0, 5.0]))
 
-    with pytest.raises(ValueError, match="must contain integers"):
+    with pytest.raises(ValueError, match="Invalid numpy file"):
         TokenDataset(data_path=str(path), context_window=4, logger=logger)
 
 
