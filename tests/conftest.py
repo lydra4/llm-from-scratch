@@ -78,3 +78,16 @@ def tiny_train_loader(
     )
 
     return DataLoader(dataset=dataset, batch_size=2, shuffle=False)
+
+
+@pytest.fixture
+def tiny_val_loader(
+    token_array_path: str, tiny_cfg: DictConfig, logger: logging.Logger
+) -> DataLoader:
+    dataset = TokenDataset(
+        data_path=token_array_path,
+        context_window=tiny_cfg.dataset.context_window,
+        logger=logger,
+    )
+
+    return DataLoader(dataset=dataset, batch_size=2, shuffle=False)
