@@ -21,7 +21,7 @@ python src/train.py \
   checkpoint.save_best=true \
   checkpoint.save_latest=true \
   checkpoint.resume_path=null \
-  mlflow.tracking_uri=file:/tmp/llm-smoke-mlruns \
+  mlflow.tracking_uri=sqlite:////tmp/llm-smoke-mlflow.db \
   mlflow.experiment_name=llm-smoke \
   mlflow.log_model=false \
   hydra.run.dir=/tmp/llm-smoke-hydra
