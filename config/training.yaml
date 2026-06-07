@@ -1,6 +1,6 @@
 defaults:
   - encoding
-  - bpe_tokenizer
+  - bpe_tokenizer@bpe_tokenizer
   - optimizer: adamw
   - criterion: cross_entropy
   - hardware: local
@@ -41,7 +41,7 @@ checkpoint:
   resume_path: null
 
 mlflow:
-  tracking_uri: file:./mlruns
+  tracking_uri: sqlite:///mlflow.db
   experiment_name: llm-from-scratch
   log_model: true
   checkpoint_interval: 5
