@@ -172,7 +172,7 @@ def update_best_loss_and_save(
     should_save_latest = save_latest and should_save_interval
 
     if should_save_interval:
-        logger.info(f"Saving interval checkpoint for each epoch {epoch + 1}.")
+        logger.info(f"Saving interval checkpoint for epoch {epoch + 1}.")
         save_checkpoint(
             path=os.path.join(checkpoint_dir, f"epoch_{epoch + 1:04d}.pt"),
             model=model,
@@ -186,7 +186,7 @@ def update_best_loss_and_save(
         )
 
     if should_save_latest:
-        logger.info(f"Saving latest checkpoint for epoch {epoch + 1}")
+        logger.info(f"Saving latest checkpoint for epoch {epoch + 1}.")
         save_checkpoint(
             path=os.path.join(checkpoint_dir, "latest.pt"),
             model=model,
@@ -200,7 +200,7 @@ def update_best_loss_and_save(
         )
 
     if should_save_best:
-        logger.info(f"Saving best checkpoint for epoch {epoch + 1}")
+        logger.info(f"Saving best checkpoint for epoch {epoch + 1}.")
         save_checkpoint(
             path=os.path.join(checkpoint_dir, "best.pt"),
             model=model,
