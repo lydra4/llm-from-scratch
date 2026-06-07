@@ -57,7 +57,7 @@ class TokenDataset(Dataset):
             raise ValueError(f"Data must contain integers, got dtype {self.data.dtype}")
 
         self.logger.info(
-            f"Loaded data: shape={self.data.shape}, dtype={self.data.dtype}"
+            f"Loaded data: shape={self.data.shape}, dtype={self.data.dtype}, "
             f"context_window={self.context_window}"
         )
 
