@@ -106,7 +106,7 @@ def train_epoch(
         logger.info(
             f"Epoch {epoch} | Loss: {avg_train_loss:.2f} | "
             f"Speed: {tokens_per_sec:.0f} tokens/sec | "
-            f"Time: {epoch:.2f}s"
+            f"Time: {epoch_time:.2f}s"
         )
 
         return metrics
