@@ -1,5 +1,5 @@
 defaults:
-  - encoding
+  - encoding@encoding
   - bpe_tokenizer@bpe_tokenizer
   - optimizer: adamw
   - criterion: cross_entropy
