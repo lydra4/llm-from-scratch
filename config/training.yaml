@@ -41,7 +41,6 @@ checkpoint:
   resume_path: null
 
 mlflow:
-  tracking_uri: sqlite:///mlflow.db
-  experiment_name: llm-from-scratch
+  tracking_uri: databricks
   log_model: true
   checkpoint_interval: 5
