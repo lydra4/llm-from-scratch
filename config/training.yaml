@@ -42,5 +42,6 @@ checkpoint:
 
 mlflow:
   tracking_uri: databricks
+  experiment_name: ${oc.env:EXPERIMENT_NAME}
   log_model: true
   checkpoint_interval: 5
