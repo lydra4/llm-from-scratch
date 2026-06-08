@@ -1,4 +1,3 @@
-import os
 from collections.abc import Mapping
 from contextlib import contextmanager
 from typing import Any, cast
@@ -26,7 +25,7 @@ def flatten_dict(d: Mapping[str, Any], parent_key: str = "", sep: str = ".") -> 
 @contextmanager
 def start_mlflow_run(cfg: DictConfig):
     mlflow.set_tracking_uri(uri=cfg.mlflow.tracking_uri)
-    mlflow.set_experiment(experiment_name=os.getenv("EXPERIMENT_NAME"))
+    mlflow.set_experiment(experiment_name=cfg.mlflow.experiment_name)
 
     resolved_cfg = cast(
         Mapping[str, Any],
