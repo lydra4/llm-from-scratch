@@ -1,1 +1,1 @@
-device: "cuda" # "cuda" or "cpu"
+device: "auto" # "cuda" or "cpu" or "auto"
