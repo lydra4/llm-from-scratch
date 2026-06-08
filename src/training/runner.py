@@ -14,7 +14,7 @@ from training.checkpointing import (
     update_best_loss_and_save,
 )
 from training.trainer import train_epoch, validate_epoch
-from utils.setup import setup_model_and_components
+from utils.setup import resolve_device, setup_model_and_components
 
 
 def run_epoch(
@@ -69,8 +69,8 @@ def run_epoch(
 
 
 def run_training(cfg: DictConfig, logger: logging.Logger) -> None:
-    device = torch.device(device=cfg.hardware.device)
-    logger.info(f"Training model on {device}.")
+    device = resolve_device(requested_device=cfg.hardware.device, logger=logger)
+    logger.info("Training model on %s.", device)
 
     with start_mlflow_run(cfg=cfg):
         train_loader, val_loader = create_dataloaders(cfg=cfg, logger=logger)
