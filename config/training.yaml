@@ -7,18 +7,18 @@ defaults:
   - _self_
 
 dataset:
-  context_window: 2_048
+  context_window: 1_024
 
 train:
   data_path: ${encoding.save_path}/train/train.npy
   loader:
-    batch_size: 128
+    batch_size: 64
     shuffle: True
 
 val:
   data_path: ${encoding.save_path}/val/val.npy
   loader:
-    batch_size: 128
+    batch_size: 64
     shuffle: False
 
 model:
