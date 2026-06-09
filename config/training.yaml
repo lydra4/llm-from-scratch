@@ -12,13 +12,13 @@ dataset:
 train:
   data_path: ${encoding.save_path}/train/train.npy
   loader:
-    batch_size: 16
+    batch_size: 128
     shuffle: True
 
 val:
   data_path: ${encoding.save_path}/val/val.npy
   loader:
-    batch_size: 16
+    batch_size: 128
     shuffle: False
 
 model:
