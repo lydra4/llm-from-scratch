@@ -22,7 +22,7 @@ val:
     shuffle: False
 
 model:
-  epochs: 100
+  epochs: 10
   vocab_size: ${bpe_tokenizer.vocab_size}
   d_model: 384
   n_layers: 6
